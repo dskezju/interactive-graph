@@ -1,6 +1,6 @@
 # interactive-graph
 
-test
+A visualization and editing tool for knowledge graph.
 
 ## Project setup
 ```
