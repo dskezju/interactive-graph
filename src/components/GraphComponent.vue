@@ -182,6 +182,7 @@ export default class GraphComponent extends Vue {}
 body {
   font-family: sans-serif;
 }
+
 html,
 body,
 #sigma-container {
@@ -191,20 +192,24 @@ body,
   padding: 0;
   overflow: hidden;
 }
+
 #controls {
   position: absolute;
   right: 1em;
   top: 1em;
   text-align: right;
 }
+
 .input {
   position: relative;
   display: inline-block;
   vertical-align: middle;
 }
+
 .input:not(:hover) label {
   display: none;
 }
+
 .input label {
   position: absolute;
   top: 100%;
@@ -218,6 +223,7 @@ body,
   font-size: 0.8em;
   white-space: nowrap;
 }
+
 .input button {
   width: 2.5em;
   height: 2.5em;
