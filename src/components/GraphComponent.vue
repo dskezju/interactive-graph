@@ -25,6 +25,8 @@ import { parse } from "graphology-gexf/browser";
 import { Vue } from "vue-class-component";
 import chroma from "chroma-js";
 import { v4 as uuid } from "uuid";
+import NodeProgramFull from "./webgl/programs/node.full";
+import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 
 fetch("./arctic.gexf")
   .then((res) => res.text())
@@ -47,6 +49,11 @@ fetch("./arctic.gexf")
     const renderer = new Sigma(graph, container, {
       minCameraRatio: 0.1,
       maxCameraRatio: 10,
+      nodeProgramClasses: {
+        image: getNodeProgramImage(),
+        circle: NodeProgramFull,
+      },
+      renderEdgeLabels: true,
     });
     const camera = renderer.getCamera();
 
@@ -144,6 +151,7 @@ fetch("./arctic.gexf")
           ...coordForGraph,
           size: 4,
           color: chroma.random().hex(),
+          // type: "border",
         };
 
         // Searching the two closest nodes to auto-create an edge to it
