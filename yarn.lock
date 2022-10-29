@@ -4710,6 +4710,13 @@ graphology-gexf@^0.10.3:
     graphology-utils "^2.4.1"
     xml-writer "^1.7.0"
 
+graphology-layout-forceatlas2@^0.10.1:
+  version "0.10.1"
+  resolved "https://registry.yarnpkg.com/graphology-layout-forceatlas2/-/graphology-layout-forceatlas2-0.10.1.tgz#741842135609d82d12db5a5fdf74672062c28205"
+  integrity sha512-ogzBeF1FvWzjkikrIFwxhlZXvD2+wlY54lqhsrWprcdPjopM2J9HoMweUmIgwaTvY4bUYVimpSsOdvDv1gPRFQ==
+  dependencies:
+    graphology-utils "^2.1.0"
+
 graphology-operators@^1.5.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/graphology-operators/-/graphology-operators-1.6.0.tgz#daad1600219ad47a3005504f252f80d9b402ad09"
@@ -4722,7 +4729,7 @@ graphology-types@^0.24.5:
   resolved "https://registry.yarnpkg.com/graphology-types/-/graphology-types-0.24.5.tgz#55b93139047a40657098d308ae7daf0ab9818cc1"
   integrity sha512-m8FVoj9b6MwIaTN+/AvoxXhcK5n0uSe7ZnhbQNTcjh94vzN6m5hU501LihtCfRjF35QEMVrXYOrTNO0wAR1Gxw==
 
-graphology-utils@^2.0.0, graphology-utils@^2.4.1, graphology-utils@^2.5.0:
+graphology-utils@^2.0.0, graphology-utils@^2.1.0, graphology-utils@^2.4.1, graphology-utils@^2.5.0:
   version "2.5.2"
   resolved "https://registry.yarnpkg.com/graphology-utils/-/graphology-utils-2.5.2.tgz#4d30d6e567d27c01f105e1494af816742e8d2440"
   integrity sha512-ckHg8MXrXJkOARk56ZaSCM1g1Wihe2d6iTmz1enGOz4W/l831MBCKSayeFQfowgF8wd+PQ4rlch/56Vs/VZLDQ==

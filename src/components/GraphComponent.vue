@@ -27,6 +27,8 @@ import chroma from "chroma-js";
 import { v4 as uuid } from "uuid";
 import NodeProgramFull from "./webgl/programs/node.full";
 import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
+import FA2Layout from "graphology-layout-forceatlas2/worker";
+import forceAtlas2 from "graphology-layout-forceatlas2";
 
 fetch("./arctic.gexf")
   .then((res) => res.text())
@@ -174,6 +176,12 @@ fetch("./arctic.gexf")
         closestNodes.forEach((e) => graph.addEdge(id, e.nodeId));
       }
     );
+
+    const sensibleSettings = forceAtlas2.inferSettings(graph);
+    const layout = new FA2Layout(graph, {
+      settings: sensibleSettings,
+    });
+    layout.start();
   });
 export default class GraphComponent extends Vue {}
 </script>
