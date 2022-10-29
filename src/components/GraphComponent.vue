@@ -35,6 +35,11 @@ fetch("./arctic.gexf")
   .then((gexf) => {
     // Parse GEXF string:
     const graph = parse(Graph, gexf);
+    const sensibleSettings = forceAtlas2.inferSettings(graph);
+    const layout = new FA2Layout(graph, {
+      settings: sensibleSettings,
+    });
+    layout.start();
 
     // Retrieve some useful DOM elements:
     const container = document.getElementById("sigma-container") as HTMLElement;
@@ -98,6 +103,7 @@ fetch("./arctic.gexf")
     //  - disable the camera so its state is not updated
     renderer.on("downNode", (e) => {
       isDragging = true;
+      layout.stop();
       draggedNode = e.node;
       graph.setNodeAttribute(draggedNode, "highlighted", true);
     });
@@ -124,6 +130,7 @@ fetch("./arctic.gexf")
         graph.removeNodeAttribute(draggedNode, "highlighted");
       }
       isDragging = false;
+      layout.start();
       draggedNode = null;
     });
 
@@ -176,12 +183,6 @@ fetch("./arctic.gexf")
         closestNodes.forEach((e) => graph.addEdge(id, e.nodeId));
       }
     );
-
-    const sensibleSettings = forceAtlas2.inferSettings(graph);
-    const layout = new FA2Layout(graph, {
-      settings: sensibleSettings,
-    });
-    layout.start();
   });
 export default class GraphComponent extends Vue {}
 </script>
