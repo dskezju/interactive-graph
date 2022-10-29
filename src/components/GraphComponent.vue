@@ -98,58 +98,6 @@ fetch("./arctic.gexf")
       renderer.getSetting("labelRenderedSizeThreshold") + "";
 
     //
-    // Drag'n'drop feature
-    // ~~~~~~~~~~~~~~~~~~~
-    //
-
-    // State for drag'n'drop
-    let draggedNode: string | null = null;
-    let isDragging = false;
-
-    // On mouse down on a node
-    //  - we enable the drag mode
-    //  - save in the dragged node in the state
-    //  - highlight the node
-    //  - disable the camera so its state is not updated
-    renderer.on("downNode", (e) => {
-      isDragging = true;
-      layout.stop();
-      draggedNode = e.node;
-      graph.setNodeAttribute(draggedNode, "highlighted", true);
-    });
-
-    // On mouse move, if the drag mode is enabled, we change the position of the draggedNode
-    renderer.getMouseCaptor().on("mousemovebody", (e) => {
-      if (!isDragging || !draggedNode) return;
-
-      // Get new position of node
-      const pos = renderer.viewportToGraph(e);
-
-      graph.setNodeAttribute(draggedNode, "x", pos.x);
-      graph.setNodeAttribute(draggedNode, "y", pos.y);
-
-      // Prevent sigma to move camera:
-      e.preventSigmaDefault();
-      e.original.preventDefault();
-      e.original.stopPropagation();
-    });
-
-    // On mouse up, we reset the autoscale and the dragging mode
-    renderer.getMouseCaptor().on("mouseup", () => {
-      if (draggedNode) {
-        graph.removeNodeAttribute(draggedNode, "highlighted");
-      }
-      isDragging = false;
-      layout.start();
-      draggedNode = null;
-    });
-
-    // Disable the autoscale at the first down interaction
-    renderer.getMouseCaptor().on("mousedown", () => {
-      if (!renderer.getCustomBBox()) renderer.setCustomBBox(renderer.getBBox());
-    });
-
-    //
     // Create node (and edge) by click
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     //
@@ -196,7 +144,7 @@ fetch("./arctic.gexf")
 
     //
     // highlight and search
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~~~~~~~~~~~~~~
     //
 
     const searchInput = document.getElementById(
@@ -217,8 +165,10 @@ fetch("./arctic.gexf")
 
       // State derived from hovered node:
       hoveredNeighbors?: Set<string>;
+
+      isDragging?: boolean;
     }
-    const state: State = { searchQuery: "" };
+    const state: State = { searchQuery: "", isDragging: false };
 
     // Feed the datalist autocomplete values:
     searchSuggestions.innerHTML = graph
@@ -298,10 +248,14 @@ fetch("./arctic.gexf")
 
     // Bind graph interactions:
     renderer.on("enterNode", ({ node }) => {
-      setHoveredNode(node);
+      if (!state.isDragging) {
+        setHoveredNode(node);
+      }
     });
     renderer.on("leaveNode", () => {
-      setHoveredNode(undefined);
+      if (!state.isDragging) {
+        setHoveredNode(undefined);
+      }
     });
 
     // Render nodes accordingly to the internal state:
@@ -351,6 +305,58 @@ fetch("./arctic.gexf")
       }
 
       return res;
+    });
+
+    //
+    // Drag'n'drop feature
+    // ~~~~~~~~~~~~~~~~~~~
+    //
+
+    // State for drag'n'drop
+    let draggedNode: string | null = null;
+    state.isDragging = false;
+
+    // On mouse down on a node
+    //  - we enable the drag mode
+    //  - save in the dragged node in the state
+    //  - highlight the node
+    //  - disable the camera so its state is not updated
+    renderer.on("downNode", (e) => {
+      state.isDragging = true;
+      layout.stop();
+      draggedNode = e.node;
+      graph.setNodeAttribute(draggedNode, "highlighted", true);
+    });
+
+    // On mouse move, if the drag mode is enabled, we change the position of the draggedNode
+    renderer.getMouseCaptor().on("mousemovebody", (e) => {
+      if (!state.isDragging || !draggedNode) return;
+
+      // Get new position of node
+      const pos = renderer.viewportToGraph(e);
+
+      graph.setNodeAttribute(draggedNode, "x", pos.x);
+      graph.setNodeAttribute(draggedNode, "y", pos.y);
+
+      // Prevent sigma to move camera:
+      e.preventSigmaDefault();
+      e.original.preventDefault();
+      e.original.stopPropagation();
+    });
+
+    // On mouse up, we reset the autoscale and the dragging mode
+    renderer.getMouseCaptor().on("mouseup", () => {
+      if (draggedNode) {
+        graph.removeNodeAttribute(draggedNode, "highlighted");
+      }
+      state.isDragging = false;
+      layout.start();
+      draggedNode = null;
+    });
+
+    // Disable the autoscale at the first down interaction
+    renderer.getMouseCaptor().on("mousedown", () => {
+      if (!renderer.getCustomBBox()) renderer.setCustomBBox(renderer.getBBox());
     });
   });
 export default class GraphComponent extends Vue {}
