@@ -64,7 +64,7 @@ fetch("./arctic.gexf")
 
     // Instanciate sigma:
     const renderer = new Sigma(graph, container, {
-      minCameraRatio: 0.1,
+      minCameraRatio: 0.001,
       maxCameraRatio: 10,
       nodeProgramClasses: {
         image: getNodeProgramImage(),

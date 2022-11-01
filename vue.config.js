@@ -1,6 +1,7 @@
 const { defineConfig } = require("@vue/cli-service");
 module.exports = defineConfig({
   transpileDependencies: true,
+  publicPath: "/interactive-graph/",
   chainWebpack: (config) => {
     // webgl Loader
     config.module
@@ -9,5 +10,10 @@ module.exports = defineConfig({
       .use("raw-loader")
       .loader("raw-loader")
       .end();
+  },
+  configureWebpack: {
+    devServer: {
+      allowedHosts: "all",
+    },
   },
 });
