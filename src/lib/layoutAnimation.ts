@@ -4,19 +4,13 @@ type LayoutMapping = { [key: string]: { x: number; y: number } };
 
 type AnimationSettings = {
   duration?: number;
-  fps?: number;
 };
 
 const defaultSettings = {
   duration: 500,
-  fps: 30,
 };
 
-async function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export async function layoutAnimate(
+export function layoutAnimate(
   graph: Graph,
   targetPosition: LayoutMapping,
   settings?: AnimationSettings
@@ -31,14 +25,13 @@ export async function layoutAnimate(
   });
 
   const s = settings ? settings : defaultSettings;
-  const fps = s.fps || defaultSettings.fps;
   const duration = s.duration || defaultSettings.duration;
-  const totalFrame = (fps * duration) / 1000;
 
-  for (let frameIndex = 0; frameIndex < totalFrame; ++frameIndex) {
-    const spf = sleep(1000 / fps);
+  let finished = false;
+  const startTime = Date.now();
 
-    const timeProgress = frameIndex / totalFrame;
+  const animate = function () {
+    const timeProgress = Math.min((Date.now() - startTime) / duration, 1);
     const linearProgress = timeProgress;
     const bezierProgress =
       linearProgress * linearProgress * (3 - 2 * linearProgress);
@@ -56,6 +49,14 @@ export async function layoutAnimate(
 
       return attr;
     });
-    await spf;
-  }
+
+    if (!finished) {
+      if (timeProgress == 1) {
+        finished = true;
+      }
+      window.requestAnimationFrame(animate);
+    }
+  };
+
+  window.requestAnimationFrame(animate);
 }

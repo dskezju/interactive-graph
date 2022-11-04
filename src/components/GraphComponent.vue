@@ -40,7 +40,7 @@ import FA2Layout from "graphology-layout-forceatlas2/worker";
 import forceAtlas2 from "graphology-layout-forceatlas2";
 import { Coordinates, EdgeDisplayData, NodeDisplayData } from "sigma/types";
 import circlepack from "graphology-layout/circlepack";
-import { layoutAnimate } from "@/lib/animation";
+import { layoutAnimate } from "@/lib/layoutAnimation";
 import { drawHover } from "@/utils/canvas";
 import { isNil } from "lodash";
 
@@ -137,39 +137,46 @@ fetch("./arctic.gexf")
     renderer.on(
       "clickStage",
       ({ event }: { event: { x: number; y: number } }) => {
-        // Sigma (ie. graph) and screen (viewport) coordinates are not the same.
-        // So we need to translate the screen x & y coordinates to the graph one by calling the sigma helper `viewportToGraph`
-        const coordForGraph = renderer.viewportToGraph({
-          x: event.x,
-          y: event.y,
-        });
+        // // Sigma (ie. graph) and screen (viewport) coordinates are not the same.
+        // // So we need to translate the screen x & y coordinates to the graph one by calling the sigma helper `viewportToGraph`
+        // const coordForGraph = renderer.viewportToGraph({
+        //   x: event.x,
+        //   y: event.y,
+        // });
 
-        // We create a new node
-        const node = {
-          ...coordForGraph,
-          size: 4,
-          color: chroma.random().hex(),
-          // type: "border",
-        };
+        // // We create a new node
+        // const node = {
+        //   ...coordForGraph,
+        //   size: 4,
+        //   color: chroma.random().hex(),
+        //   // type: "border",
+        // };
 
-        // Searching the two closest nodes to auto-create an edge to it
-        const closestNodes = graph
-          .nodes()
-          .map((nodeId) => {
-            const attrs = graph.getNodeAttributes(nodeId);
-            const distance =
-              Math.pow(node.x - attrs.x, 2) + Math.pow(node.y - attrs.y, 2);
-            return { nodeId, distance };
+        // // Searching the two closest nodes to auto-create an edge to it
+        // const closestNodes = graph
+        //   .nodes()
+        //   .map((nodeId) => {
+        //     const attrs = graph.getNodeAttributes(nodeId);
+        //     const distance =
+        //       Math.pow(node.x - attrs.x, 2) + Math.pow(node.y - attrs.y, 2);
+        //     return { nodeId, distance };
+        //   })
+        //   .sort((a, b) => a.distance - b.distance)
+        //   .slice(0, 2);
+
+        // // We register the new node into graphology instance
+        // const id = uuid();
+        // graph.addNode(id, node);
+
+        // // We create the edges
+        // closestNodes.forEach((e) => graph.addEdge(id, e.nodeId));
+
+        layoutAnimate(
+          graph,
+          circlepack(graph, {
+            hierarchyAttributes: ["color"],
           })
-          .sort((a, b) => a.distance - b.distance)
-          .slice(0, 2);
-
-        // We register the new node into graphology instance
-        const id = uuid();
-        graph.addNode(id, node);
-
-        // We create the edges
-        closestNodes.forEach((e) => graph.addEdge(id, e.nodeId));
+        );
       }
     );
 
@@ -381,12 +388,6 @@ fetch("./arctic.gexf")
         graph.removeNodeAttribute(draggedNode, "highlighted");
       }
       state.isDragging = false;
-      layoutAnimate(
-        graph,
-        circlepack(graph, {
-          hierarchyAttributes: ["color"],
-        })
-      );
       // layout.start();
       draggedNode = null;
     });
