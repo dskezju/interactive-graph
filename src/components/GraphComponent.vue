@@ -79,13 +79,12 @@ fetch("./arctic.gexf")
     });
 
     const subtitleFields = ["occurrences"];
-    graph.forEachNode((node, nodeData) =>
+    graph.forEachNode((node) =>
       graph.setNodeAttribute(
         node,
         "subtitles",
         subtitleFields.flatMap((subtitleField) => {
           const val = graph.getNodeAttributes(node)[subtitleField];
-          console.log(val);
           return isNil(val)
             ? []
             : [
