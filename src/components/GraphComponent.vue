@@ -41,6 +41,8 @@ import forceAtlas2 from "graphology-layout-forceatlas2";
 import { Coordinates, EdgeDisplayData, NodeDisplayData } from "sigma/types";
 import circlepack from "graphology-layout/circlepack";
 import { layoutAnimate } from "@/lib/animation";
+import { drawHover } from "@/utils/canvas";
+import { isNil } from "lodash";
 
 fetch("./arctic.gexf")
   .then((res) => res.text())
@@ -75,6 +77,33 @@ fetch("./arctic.gexf")
       },
       renderEdgeLabels: true,
     });
+
+    const subtitleFields = ["occurrences"];
+    graph.forEachNode((node, nodeData) =>
+      graph.setNodeAttribute(
+        node,
+        "subtitles",
+        subtitleFields.flatMap((subtitleField) => {
+          const val = graph.getNodeAttributes(node)[subtitleField];
+          console.log(val);
+          return isNil(val)
+            ? []
+            : [
+                `${subtitleField}: ${
+                  typeof val === "number" ? val.toLocaleString() : val
+                }`,
+              ];
+        })
+      )
+    );
+    renderer.setSetting("hoverRenderer", (context, data, settings) =>
+      drawHover(
+        context,
+        { ...renderer.getNodeDisplayData(data.key), ...data },
+        settings
+      )
+    );
+
     const camera = renderer.getCamera();
 
     // Bind zoom manipulation buttons
