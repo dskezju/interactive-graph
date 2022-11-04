@@ -7,7 +7,7 @@ type AnimationSettings = {
   fps?: number;
 };
 
-const defaultSettings: AnimationSettings = {
+const defaultSettings = {
   duration: 500,
   fps: 30,
 };
@@ -31,8 +31,8 @@ export async function layoutAnimate(
   });
 
   const s = settings ? settings : defaultSettings;
-  const fps = s.fps || 60;
-  const duration = s.duration || 1000;
+  const fps = s.fps || defaultSettings.fps;
+  const duration = s.duration || defaultSettings.duration;
   const totalFrame = (fps * duration) / 1000;
 
   for (let frameIndex = 0; frameIndex < totalFrame; ++frameIndex) {
