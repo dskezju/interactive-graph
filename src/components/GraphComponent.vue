@@ -39,17 +39,20 @@ import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import FA2Layout from "graphology-layout-forceatlas2/worker";
 import forceAtlas2 from "graphology-layout-forceatlas2";
 import { Coordinates, EdgeDisplayData, NodeDisplayData } from "sigma/types";
+import circlepack from "graphology-layout/circlepack";
+import { layoutAnimate } from "@/lib/animation";
 
 fetch("./arctic.gexf")
   .then((res) => res.text())
   .then((gexf) => {
     // Parse GEXF string:
     const graph = parse(Graph, gexf);
+
     const sensibleSettings = forceAtlas2.inferSettings(graph);
     const layout = new FA2Layout(graph, {
       settings: sensibleSettings,
     });
-    layout.start();
+    // layout.start();
 
     // Retrieve some useful DOM elements:
     const container = document.getElementById("sigma-container") as HTMLElement;
@@ -350,7 +353,13 @@ fetch("./arctic.gexf")
         graph.removeNodeAttribute(draggedNode, "highlighted");
       }
       state.isDragging = false;
-      layout.start();
+      layoutAnimate(
+        graph,
+        circlepack(graph, {
+          hierarchyAttributes: ["color"],
+        })
+      );
+      // layout.start();
       draggedNode = null;
     });
 
