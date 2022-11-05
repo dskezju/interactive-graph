@@ -127,61 +127,19 @@ fetch("./arctic.gexf")
             renderEdgeLabels: true,
           });
 
-    const subtitleFields = [
-      "productName",
-      "categoryID",
-      "discontinued",
-      "labels",
-      "productID",
-      "quantityPerUnit",
-      "reorderLevel",
-      "supplierID",
-      "unitPrice",
-      "unitsInStock",
-      "unitsOnOrder",
-      "address",
-      "city",
-      "companyName",
-      "contactName",
-      "contactTitle",
-      "country",
-      "fax",
-      "homePage",
-      "phone",
-      "postalCode",
-      "region",
-      "supplierID",
-      "customerID",
-      "employeeID",
-      "freight",
-      "orderDate",
-      "orderID",
-      "requiredDate",
-      "shipAddress",
-      "shipCity",
-      "shipCountry",
-      "shipName",
-      "shipPostalCode",
-      "shipRegion",
-      "shipVia",
-      "shippedDate",
-    ];
-    graph.forEachNode((node) =>
-      graph.setNodeAttribute(
-        node,
-        "subtitles",
-        subtitleFields.flatMap((subtitleField) => {
-          const val = graph.getNodeAttributes(node)[subtitleField];
-          return isNil(val)
-            ? []
-            : [
-                `${subtitleField}: ${
-                  typeof val === "number" ? val.toLocaleString() : val
-                }`,
-              ];
-        })
-      )
-    );
+    graph.forEachNode((node, attr) => {
+      let subtitles: string[] = [];
+      for (const [key, value] of Object.entries(attr)) {
+        subtitles.push(
+          `${key}: ${
+            typeof value === "number" ? value.toLocaleString() : value
+          }`
+        );
+      }
+      attr.subtitles = subtitles;
+      return attr;
+    });
+
     renderer.setSetting("hoverRenderer", (context, data, settings) =>
       drawHover(
         context,
