@@ -35,8 +35,8 @@ type Node struct {
 }
 
 type Link struct {
-	Identity   int64                  `json:"key"`
-	Type       string                 `json:"type"`
+	Identity int64 `json:"key"`
+	// Type       string                 `json:"type"`
 	Start      int64                  `json:"source"`
 	End        int64                  `json:"target"`
 	Properties map[string]interface{} `json:"attributes,omitempty"`
@@ -45,7 +45,7 @@ type Link struct {
 func parseConfiguration() *Neo4jConfiguration {
 
 	return &Neo4jConfiguration{
-		Url:      "neo4j://localhost:11003",
+		Url:      "neo4j://localhost:7687",
 		Username: "neo4j",
 		Password: "Northwind",
 		Database: "neo4j",
@@ -91,6 +91,7 @@ func defaultHandler(w http.ResponseWriter, req *http.Request) {
 func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 
 		session := driver.NewSession(neo4j.SessionConfig{
 			AccessMode:   neo4j.AccessModeRead,
@@ -98,15 +99,13 @@ func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter
 		})
 		defer unsafeClose(session)
 
-		limit := 150
+		limit := 1000000
 		query_nodes := `MATCH (n)
-				  WHERE ID(n)=0
-				  RETURN labels(n) as l, ID(n) as id, properties(n) as p
-				  LIMIT $limit`
+				  	RETURN labels(n) as l, ID(n) as id, properties(n) as p
+                `
 		query_edges := `MATCH (sr)-[r]->(er)
-				  WHERE ID(r)=0
-		 		  RETURN ID(r) as rid,  properties(r) as rprops, type(r) as rtype, ID(sr) as srid, ID(er) as erid
-		 		  LIMIT $limit`
+		 		 	RETURN ID(r) as rid,  properties(r) as rprops, type(r) as rtype, ID(sr) as srid, ID(er) as erid
+                `
 		d3Resp, err := session.ReadTransaction(func(tx neo4j.Transaction) (interface{}, error) {
 			records_node, err := tx.Run(query_nodes, map[string]interface{}{"limit": limit})
 			if err != nil {
@@ -155,8 +154,8 @@ func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter
 				// fmt.Printf("%s\n", record)
 
 				identity, _ := record.Get("rid")
-				properties, _ := record.Get("rprops")
-				rtype, _ := record.Get("rtype")
+				// properties, _ := record.Get("rprops")
+				// rtype, _ := record.Get("rtype")
 				startID, _ := record.Get("srid")
 				endID, _ := record.Get("erid")
 
@@ -179,26 +178,26 @@ func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter
 					fmt.Printf("endID not a int: %v\n", endID)
 				}
 
-				if rec_p, ok := properties.(map[string]interface{}); ok {
-					// add type of link to properties
-					if rec_t, ok := rtype.(string); ok {
-						rec_p["type"] = rec_t
-					} else {
-						fmt.Printf("rec_t not a string: %v\n", rtype)
-					}
+				// if rec_p, ok := properties.(map[string]interface{}); ok {
+				// 	// add type of link to properties
+				// 	if rec_t, ok := rtype.(string); ok {
+				// 		rec_p["type"] = rec_t
+				// 	} else {
+				// 		fmt.Printf("rec_t not a string: %v\n", rtype)
+				// 	}
 
-					link.Properties = rec_p
-					// for key, val := range rec {
-					// 	fmt.Println(key, val)
-					// }
-				} else {
-					fmt.Printf("record not a map[string]interface{}: %v\n", record)
-				}
+				// 	link.Properties = rec_p
+				// 	// for key, val := range rec {
+				// 	// 	fmt.Println(key, val)
+				// 	// }
+				// } else {
+				// 	fmt.Printf("record not a map[string]interface{}: %v\n", record)
+				// }
 
 				result.Links = append(result.Links, link)
 
 			}
-			fmt.Println(result)
+			// fmt.Println(result)
 			return result, nil
 		})
 		if err != nil {
@@ -228,7 +227,7 @@ func main() {
 	var port string
 	var found bool
 	if port, found = os.LookupEnv("PORT"); !found {
-		port = "8080"
+		port = "8083"
 	}
 	fmt.Printf("Running on port %s, database is at %s\n", port, configuration.Url)
 	panic(http.ListenAndServe(":"+port, serveMux))

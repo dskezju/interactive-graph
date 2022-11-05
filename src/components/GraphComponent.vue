@@ -40,15 +40,38 @@ import FA2Layout from "graphology-layout-forceatlas2/worker";
 import forceAtlas2 from "graphology-layout-forceatlas2";
 import { Coordinates, EdgeDisplayData, NodeDisplayData } from "sigma/types";
 import circlepack from "graphology-layout/circlepack";
+import circular from "graphology-layout/circular";
 import { layoutAnimate } from "@/lib/layoutAnimation";
 import { drawHover } from "@/utils/canvas";
 import { isNil } from "lodash";
 
-fetch("./arctic.gexf")
-  .then((res) => res.text())
-  .then((gexf) => {
-    // Parse GEXF string:
-    const graph = parse(Graph, gexf);
+fetch("http://10.109.92.74:8083/")
+  .then((res) => res.json())
+  .then((jsonObj) => {
+    const graph = new Graph();
+    graph.import(jsonObj);
+
+    function colorize(str: string) {
+      for (
+        var i = 0, hash = 0;
+        i < str.length;
+        hash = str.charCodeAt(i++) + ((hash << 5) - hash)
+      );
+      let color = Math.floor(
+        Math.abs(((Math.sin(hash) * 10000) % 1) * 16777216)
+      ).toString(16);
+      return "#" + Array(6 - color.length + 1).join("0") + color;
+    }
+
+    graph.forEachNode((node, attr) => {
+      attr.color = chroma(colorize(attr["labels"][0])).hex();
+      attr.label =
+        attr["productName"] || attr["companyName"] || attr["shipName"];
+      attr.size = attr["reorderLevel"] / 5;
+      return attr;
+    });
+
+    circular.assign(graph);
 
     const sensibleSettings = forceAtlas2.inferSettings(graph);
     const layout = new FA2Layout(graph, {
@@ -70,7 +93,7 @@ fetch("./arctic.gexf")
     // Instanciate sigma:
     const renderer = new Sigma(graph, container, {
       minCameraRatio: 0.001,
-      maxCameraRatio: 10,
+      maxCameraRatio: 1000,
       nodeProgramClasses: {
         image: getNodeProgramImage(),
         circle: NodeProgramFull,
@@ -78,7 +101,45 @@ fetch("./arctic.gexf")
       renderEdgeLabels: true,
     });
 
-    const subtitleFields = ["occurrences"];
+    const subtitleFields = [
+      "productName",
+      "categoryID",
+      "discontinued",
+      "labels",
+      "productID",
+      "quantityPerUnit",
+      "reorderLevel",
+      "supplierID",
+      "unitPrice",
+      "unitsInStock",
+      "unitsOnOrder",
+      "address",
+      "city",
+      "companyName",
+      "contactName",
+      "contactTitle",
+      "country",
+      "fax",
+      "homePage",
+      "phone",
+      "postalCode",
+      "region",
+      "supplierID",
+      "customerID",
+      "employeeID",
+      "freight",
+      "orderDate",
+      "orderID",
+      "requiredDate",
+      "shipAddress",
+      "shipCity",
+      "shipCountry",
+      "shipName",
+      "shipPostalCode",
+      "shipRegion",
+      "shipVia",
+      "shippedDate",
+    ];
     graph.forEachNode((node) =>
       graph.setNodeAttribute(
         node,
@@ -174,7 +235,8 @@ fetch("./arctic.gexf")
         layoutAnimate(
           graph,
           circlepack(graph, {
-            hierarchyAttributes: ["color"],
+            hierarchyAttributes: ["labels"],
+            scale: 0.02,
           })
         );
       }
