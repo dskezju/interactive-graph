@@ -26,7 +26,7 @@ type Neo4jConfiguration struct {
 
 type D3Response struct {
 	Nodes []Node `json:"nodes"`
-	Links []Link `json:"edges"`
+	Edges []Edge `json:"edges"`
 }
 
 type Node struct {
@@ -34,9 +34,9 @@ type Node struct {
 	Properties map[string]interface{} `json:"attributes,omitempty"`
 }
 
-type Link struct {
-	Identity   int64                  `json:"key"`
-	Type       string                 `json:"type"`
+type Edge struct {
+	Identity int64 `json:"key"`
+	// Type       string                 `json:"type"`
 	Start      int64                  `json:"source"`
 	End        int64                  `json:"target"`
 	Properties map[string]interface{} `json:"attributes,omitempty"`
@@ -99,12 +99,12 @@ func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter
 		defer unsafeClose(session)
 
 		limit := 150
+		// WHERE ID(n)=0
+		// WHERE ID(r)=0
 		query_nodes := `MATCH (n)
-				  WHERE ID(n)=0
 				  RETURN labels(n) as l, ID(n) as id, properties(n) as p
 				  LIMIT $limit`
 		query_edges := `MATCH (sr)-[r]->(er)
-				  WHERE ID(r)=0
 		 		  RETURN ID(r) as rid,  properties(r) as rprops, type(r) as rtype, ID(sr) as srid, ID(er) as erid
 		 		  LIMIT $limit`
 		d3Resp, err := session.ReadTransaction(func(tx neo4j.Transaction) (interface{}, error) {
@@ -160,21 +160,21 @@ func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter
 				startID, _ := record.Get("srid")
 				endID, _ := record.Get("erid")
 
-				link := Link{}
+				edge := Edge{}
 				if rec, ok := identity.(int64); ok {
-					link.Identity = rec
+					edge.Identity = rec
 				} else {
 					fmt.Printf("identity not a int: %v\n", identity)
 				}
 
 				if rec, ok := startID.(int64); ok {
-					link.Start = rec
+					edge.Start = rec
 				} else {
 					fmt.Printf("startID not a int: %v\n", startID)
 				}
 
 				if rec, ok := endID.(int64); ok {
-					link.End = rec
+					edge.End = rec
 				} else {
 					fmt.Printf("endID not a int: %v\n", endID)
 				}
@@ -187,7 +187,7 @@ func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter
 						fmt.Printf("rec_t not a string: %v\n", rtype)
 					}
 
-					link.Properties = rec_p
+					edge.Properties = rec_p
 					// for key, val := range rec {
 					// 	fmt.Println(key, val)
 					// }
@@ -195,7 +195,7 @@ func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter
 					fmt.Printf("record not a map[string]interface{}: %v\n", record)
 				}
 
-				result.Links = append(result.Links, link)
+				result.Edges = append(result.Edges, edge)
 
 			}
 			fmt.Println(result)
