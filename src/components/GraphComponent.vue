@@ -54,42 +54,50 @@ import forceAtlas2 from "graphology-layout-forceatlas2";
 import { Coordinates, EdgeDisplayData, NodeDisplayData } from "sigma/types";
 import LeftPanel from "@/components/LeftPanel.vue";
 import { defineComponent } from "vue";
+import circlepack from "graphology-layout/circlepack";
+import circular from "graphology-layout/circular";
+import { layoutAnimate } from "@/lib/layoutAnimation";
+import { drawHover } from "@/utils/canvas";
+import { isNil } from "lodash";
 
-export default defineComponent({
-  name: "GraphComponent",
-  components: {
-    LeftPanel,
-  },
-  data() {
-    return {
-      graph: new Graph(),
-      attributes: [],
-    };
-  },
-  created() {
-    this.initGraph();
-    // console.log("Finish")
-    // this.graph.nodes().forEach((node, i) => {
-    //   console.log(node, i);
-    //   console.log(this.graph.getNodeAttributes(node));
-    //   this.attributes.push(this.graph.getNodeAttributes(node));
-    // });
-    // console.log("Attr:");
-    // console.log(this.attributes);
-  },
-  methods: {
-    initGraph() {
-      fetch("./arctic.gexf")
-        .then((res) => res.text())
-        .then((gexf) => {
-          // Parse GEXF string:
-          this.graph = parse(Graph, gexf);
-          // console.log(this.graph);
-          const sensibleSettings = forceAtlas2.inferSettings(this.graph);
-          const layout = new FA2Layout(this.graph, {
-            settings: sensibleSettings,
-          });
-          layout.start();
+fetch("http://10.109.92.74:8083/")
+  .then((res) => res.json())
+  .then((jsonObj) => {
+    const graph = new Graph();
+    graph.import(jsonObj);
+
+    function colorize(str: string) {
+      for (
+        var i = 0, hash = 0;
+        i < str.length;
+        hash = str.charCodeAt(i++) + ((hash << 5) - hash)
+      );
+      let color = Math.floor(
+        Math.abs(((Math.sin(hash) * 10000) % 1) * 16777216)
+      ).toString(16);
+      return "#" + Array(6 - color.length + 1).join("0") + color;
+    }
+
+    graph.forEachNode((node, attr) => {
+      attr.color = chroma(colorize(attr["labels"][0])).hex();
+      attr.label =
+        attr["productName"] || attr["companyName"] || attr["shipName"];
+      attr.size = attr["reorderLevel"] / 5;
+      return attr;
+    });
+
+    circular.assign(graph);
+
+fetch("./arctic.gexf")
+  .then((res) => res.text())
+  .then((gexf) => {
+    // Parse GEXF string:
+    const graph = parse(Graph, gexf);
+    const sensibleSettings = forceAtlas2.inferSettings(graph);
+    const layout = new FA2Layout(graph, {
+      settings: sensibleSettings,
+    });
+    layout.start();
 
           // Retrieve some useful DOM elements:
           const container = document.getElementById(
@@ -110,15 +118,79 @@ export default defineComponent({
 
           // Instanciate sigma:
           const renderer = new Sigma(this.graph, container, {
-            minCameraRatio: 0.1,
-            maxCameraRatio: 10,
+            minCameraRatio: 0.001,
+            maxCameraRatio: 1000,
             nodeProgramClasses: {
               image: getNodeProgramImage(),
               circle: NodeProgramFull,
             },
             renderEdgeLabels: true,
           });
-          const camera = renderer.getCamera();
+
+    const subtitleFields = [
+      "productName",
+      "categoryID",
+      "discontinued",
+      "labels",
+      "productID",
+      "quantityPerUnit",
+      "reorderLevel",
+      "supplierID",
+      "unitPrice",
+      "unitsInStock",
+      "unitsOnOrder",
+      "address",
+      "city",
+      "companyName",
+      "contactName",
+      "contactTitle",
+      "country",
+      "fax",
+      "homePage",
+      "phone",
+      "postalCode",
+      "region",
+      "supplierID",
+      "customerID",
+      "employeeID",
+      "freight",
+      "orderDate",
+      "orderID",
+      "requiredDate",
+      "shipAddress",
+      "shipCity",
+      "shipCountry",
+      "shipName",
+      "shipPostalCode",
+      "shipRegion",
+      "shipVia",
+      "shippedDate",
+    ];
+    graph.forEachNode((node) =>
+      graph.setNodeAttribute(
+        node,
+        "subtitles",
+        subtitleFields.flatMap((subtitleField) => {
+          const val = graph.getNodeAttributes(node)[subtitleField];
+          return isNil(val)
+            ? []
+            : [
+                `${subtitleField}: ${
+                  typeof val === "number" ? val.toLocaleString() : val
+                }`,
+              ];
+        })
+      )
+    );
+    renderer.setSetting("hoverRenderer", (context, data, settings) =>
+      drawHover(
+        context,
+        { ...renderer.getNodeDisplayData(data.key), ...data },
+        settings
+      )
+    );
+
+    const camera = renderer.getCamera();
 
           // Bind zoom manipulation buttons
           zoomInBtn.addEventListener("click", () => {
@@ -148,46 +220,53 @@ export default defineComponent({
           // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
           //
 
-          // When clicking on the stage, we add a new node and connect it to the closest node
-          renderer.on(
-            "clickStage",
-            ({ event }: { event: { x: number; y: number } }) => {
-              // Sigma (ie. graph) and screen (viewport) coordinates are not the same.
-              // So we need to translate the screen x & y coordinates to the graph one by calling the sigma helper `viewportToGraph`
-              const coordForGraph = renderer.viewportToGraph({
-                x: event.x,
-                y: event.y,
-              });
+    // When clicking on the stage, we add a new node and connect it to the closest node
+    renderer.on(
+      "clickStage",
+      ({ event }: { event: { x: number; y: number } }) => {
+        // // Sigma (ie. graph) and screen (viewport) coordinates are not the same.
+        // // So we need to translate the screen x & y coordinates to the graph one by calling the sigma helper `viewportToGraph`
+        // const coordForGraph = renderer.viewportToGraph({
+        //   x: event.x,
+        //   y: event.y,
+        // });
 
-              // We create a new node
-              const node = {
-                ...coordForGraph,
-                size: 4,
-                color: chroma.random().hex(),
-                // type: "border",
-              };
+        // // We create a new node
+        // const node = {
+        //   ...coordForGraph,
+        //   size: 4,
+        //   color: chroma.random().hex(),
+        //   // type: "border",
+        // };
 
-              // Searching the two closest nodes to auto-create an edge to it
-              const closestNodes = this.graph
-                .nodes()
-                .map((nodeId) => {
-                  const attrs = this.graph.getNodeAttributes(nodeId);
-                  const distance =
-                    Math.pow(node.x - attrs.x, 2) +
-                    Math.pow(node.y - attrs.y, 2);
-                  return { nodeId, distance };
-                })
-                .sort((a, b) => a.distance - b.distance)
-                .slice(0, 2);
+        // // Searching the two closest nodes to auto-create an edge to it
+        // const closestNodes = graph
+        //   .nodes()
+        //   .map((nodeId) => {
+        //     const attrs = graph.getNodeAttributes(nodeId);
+        //     const distance =
+        //       Math.pow(node.x - attrs.x, 2) + Math.pow(node.y - attrs.y, 2);
+        //     return { nodeId, distance };
+        //   })
+        //   .sort((a, b) => a.distance - b.distance)
+        //   .slice(0, 2);
 
-              // We register the new node into graphology instance
-              const id = uuid();
-              this.graph.addNode(id, node);
+        // // We register the new node into graphology instance
+        // const id = uuid();
+        // graph.addNode(id, node);
 
-              // We create the edges
-              closestNodes.forEach((e) => this.graph.addEdge(id, e.nodeId));
-            }
-          );
+        // // We create the edges
+        // closestNodes.forEach((e) => graph.addEdge(id, e.nodeId));
+
+        layoutAnimate(
+          graph,
+          circlepack(graph, {
+            hierarchyAttributes: ["labels"],
+            scale: 0.02,
+          })
+        );
+      }
+    );
 
           //
           // highlight and search
@@ -411,7 +490,7 @@ export default defineComponent({
               this.graph.removeNodeAttribute(draggedNode, "highlighted");
             }
             state.isDragging = false;
-            layout.start();
+            // layout.start();
             draggedNode = null;
           });
 
