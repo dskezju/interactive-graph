@@ -59,6 +59,9 @@ import { drawHover } from "@/utils/canvas";
 import { isNil } from "lodash";
 import LeftPanel from "@/components/LeftPanel.vue";
 import { defineComponent } from "vue";
+
+import store from "@/store";
+
 export default defineComponent({
   name: "GraphComponent",
   components: {
@@ -88,6 +91,16 @@ export default defineComponent({
         .then((jsonObj) => {
           const graph = new Graph();
           graph.import(jsonObj);
+
+          store.dispatch("set", {
+            key: "graphNodeCount",
+            value: graph.nodes().length,
+          });
+
+          store.dispatch("set", {
+            key: "graphEdgeCount",
+            value: graph.edges().length,
+          });
 
           function colorize(str: string) {
             for (

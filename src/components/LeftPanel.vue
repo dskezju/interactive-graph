@@ -54,8 +54,8 @@
     </el-tab-pane>
     <el-tab-pane label="Visiualize" name="Visiualize">
       <div class="titleText">City Knowledge Graph</div>
-      <div class="informtext">Node: 2000</div>
-      <div class="informtext">Edges: 6290</div>
+      <div class="informtext">Node: {{ $store.state.graphNodeCount }}</div>
+      <div class="informtext">Edges: {{ $store.state.graphEdgeCount }}</div>
 
       <el-divider> </el-divider>
 
@@ -138,6 +138,7 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
+import store from "@/store";
 
 export default defineComponent({
   name: "LeftPanel",
