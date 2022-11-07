@@ -1,30 +1,43 @@
 <template>
-  <div id="sigma-container" style="width: 100vw; height: 100vh"></div>
-  <div id="controls">
-    <div class="input">
-      <label for="zoom-in">Zoom in</label><button id="zoom-in">+</button>
-    </div>
-    <div class="input">
-      <label for="zoom-out">Zoom out</label><button id="zoom-out">-</button>
-    </div>
-    <div class="input">
-      <label for="zoom-reset">Reset zoom</label
-      ><button id="zoom-reset">⊙</button>
-    </div>
-    <div class="input">
-      <label for="labels-threshold">Labels threshold</label>
-      <input id="labels-threshold" type="range" min="0" max="15" step="0.5" />
-    </div>
-  </div>
-  <div id="search">
-    <input
-      type="search"
-      id="search-input"
-      list="suggestions"
-      placeholder="Try searching for a node..."
-    />
-    <datalist id="suggestions"></datalist>
-  </div>
+  <el-container>
+    <el-aside style="width: 360px; height: 100vh; background-color: #ffffff">
+      <LeftPanel v-bind:attributes="attributes" />
+    </el-aside>
+    <el-main style="width: 100%; height: 100%; padding: 0px">
+      <div id="sigma-container" style="width: 100vw; height: 100vh"></div>
+      <div id="controls">
+        <div class="input">
+          <label for="zoom-in">Zoom in</label><button id="zoom-in">+</button>
+        </div>
+        <div class="input">
+          <label for="zoom-out">Zoom out</label><button id="zoom-out">-</button>
+        </div>
+        <div class="input">
+          <label for="zoom-reset">Reset zoom</label
+          ><button id="zoom-reset">⊙</button>
+        </div>
+        <div class="input">
+          <label for="labels-threshold">Labels threshold</label>
+          <input
+            id="labels-threshold"
+            type="range"
+            min="0"
+            max="15"
+            step="0.5"
+          />
+        </div>
+      </div>
+      <div id="search">
+        <input
+          type="search"
+          id="search-input"
+          list="suggestions"
+          placeholder="Try searching for a node..."
+        />
+        <datalist id="suggestions"></datalist>
+      </div>
+    </el-main>
+  </el-container>
 </template>
 
 <script lang="ts">
@@ -39,6 +52,8 @@ import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import FA2Layout from "graphology-layout-forceatlas2/worker";
 import forceAtlas2 from "graphology-layout-forceatlas2";
 import { Coordinates, EdgeDisplayData, NodeDisplayData } from "sigma/types";
+import LeftPanel from "@/components/LeftPanel.vue";
+import { defineComponent } from "vue";
 import circlepack from "graphology-layout/circlepack";
 import circular from "graphology-layout/circular";
 import { layoutAnimate } from "@/lib/layoutAnimation";
@@ -73,33 +88,44 @@ fetch("http://10.109.92.74:8083/")
 
     circular.assign(graph);
 
+fetch("./arctic.gexf")
+  .then((res) => res.text())
+  .then((gexf) => {
+    // Parse GEXF string:
+    const graph = parse(Graph, gexf);
     const sensibleSettings = forceAtlas2.inferSettings(graph);
     const layout = new FA2Layout(graph, {
       settings: sensibleSettings,
     });
-    // layout.start();
+    layout.start();
 
-    // Retrieve some useful DOM elements:
-    const container = document.getElementById("sigma-container") as HTMLElement;
-    const zoomInBtn = document.getElementById("zoom-in") as HTMLButtonElement;
-    const zoomOutBtn = document.getElementById("zoom-out") as HTMLButtonElement;
-    const zoomResetBtn = document.getElementById(
-      "zoom-reset"
-    ) as HTMLButtonElement;
-    const labelsThresholdRange = document.getElementById(
-      "labels-threshold"
-    ) as HTMLInputElement;
+          // Retrieve some useful DOM elements:
+          const container = document.getElementById(
+            "sigma-container"
+          ) as HTMLElement;
+          const zoomInBtn = document.getElementById(
+            "zoom-in"
+          ) as HTMLButtonElement;
+          const zoomOutBtn = document.getElementById(
+            "zoom-out"
+          ) as HTMLButtonElement;
+          const zoomResetBtn = document.getElementById(
+            "zoom-reset"
+          ) as HTMLButtonElement;
+          const labelsThresholdRange = document.getElementById(
+            "labels-threshold"
+          ) as HTMLInputElement;
 
-    // Instanciate sigma:
-    const renderer = new Sigma(graph, container, {
-      minCameraRatio: 0.001,
-      maxCameraRatio: 1000,
-      nodeProgramClasses: {
-        image: getNodeProgramImage(),
-        circle: NodeProgramFull,
-      },
-      renderEdgeLabels: true,
-    });
+          // Instanciate sigma:
+          const renderer = new Sigma(this.graph, container, {
+            minCameraRatio: 0.001,
+            maxCameraRatio: 1000,
+            nodeProgramClasses: {
+              image: getNodeProgramImage(),
+              circle: NodeProgramFull,
+            },
+            renderEdgeLabels: true,
+          });
 
     const subtitleFields = [
       "productName",
@@ -166,33 +192,33 @@ fetch("http://10.109.92.74:8083/")
 
     const camera = renderer.getCamera();
 
-    // Bind zoom manipulation buttons
-    zoomInBtn.addEventListener("click", () => {
-      camera.animatedZoom({ duration: 600 });
-    });
-    zoomOutBtn.addEventListener("click", () => {
-      camera.animatedUnzoom({ duration: 600 });
-    });
-    zoomResetBtn.addEventListener("click", () => {
-      camera.animatedReset({ duration: 600 });
-    });
+          // Bind zoom manipulation buttons
+          zoomInBtn.addEventListener("click", () => {
+            camera.animatedZoom({ duration: 600 });
+          });
+          zoomOutBtn.addEventListener("click", () => {
+            camera.animatedUnzoom({ duration: 600 });
+          });
+          zoomResetBtn.addEventListener("click", () => {
+            camera.animatedReset({ duration: 600 });
+          });
 
-    // Bind labels threshold to range input
-    labelsThresholdRange.addEventListener("input", () => {
-      renderer.setSetting(
-        "labelRenderedSizeThreshold",
-        +labelsThresholdRange.value
-      );
-    });
+          // Bind labels threshold to range input
+          labelsThresholdRange.addEventListener("input", () => {
+            renderer.setSetting(
+              "labelRenderedSizeThreshold",
+              +labelsThresholdRange.value
+            );
+          });
 
-    // Set proper range initial value:
-    labelsThresholdRange.value =
-      renderer.getSetting("labelRenderedSizeThreshold") + "";
+          // Set proper range initial value:
+          labelsThresholdRange.value =
+            renderer.getSetting("labelRenderedSizeThreshold") + "";
 
-    //
-    // Create node (and edge) by click
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    //
+          //
+          // Create node (and edge) by click
+          // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          //
 
     // When clicking on the stage, we add a new node and connect it to the closest node
     renderer.on(
@@ -242,224 +268,244 @@ fetch("http://10.109.92.74:8083/")
       }
     );
 
-    //
-    // highlight and search
-    // ~~~~~~~~~~~~~~~~~~~~
-    //
+          //
+          // highlight and search
+          // ~~~~~~~~~~~~~~~~~~~~
+          //
 
-    const searchInput = document.getElementById(
-      "search-input"
-    ) as HTMLInputElement;
-    const searchSuggestions = document.getElementById(
-      "suggestions"
-    ) as HTMLDataListElement;
+          const searchInput = document.getElementById(
+            "search-input"
+          ) as HTMLInputElement;
+          const searchSuggestions = document.getElementById(
+            "suggestions"
+          ) as HTMLDataListElement;
 
-    // Type and declare internal state:
-    interface State {
-      hoveredNode?: string;
-      searchQuery: string;
+          // Type and declare internal state:
+          interface State {
+            hoveredNode?: string;
+            searchQuery: string;
 
-      // State derived from query:
-      selectedNode?: string;
-      suggestions?: Set<string>;
+            // State derived from query:
+            selectedNode?: string;
+            suggestions?: Set<string>;
 
-      // State derived from hovered node:
-      hoveredNeighbors?: Set<string>;
+            // State derived from hovered node:
+            hoveredNeighbors?: Set<string>;
 
-      isDragging?: boolean;
-    }
-    const state: State = { searchQuery: "", isDragging: false };
+            isDragging?: boolean;
+          }
+          const state: State = { searchQuery: "", isDragging: false };
 
-    // Feed the datalist autocomplete values:
-    searchSuggestions.innerHTML = graph
-      .nodes()
-      .map(
-        (node) =>
-          `<option value="${graph.getNodeAttribute(node, "label")}"></option>`
-      )
-      .join("\n");
+          // Feed the datalist autocomplete values:
+          searchSuggestions.innerHTML = this.graph
+            .nodes()
+            .map(
+              (node) =>
+                `<option value="${this.graph.getNodeAttribute(
+                  node,
+                  "label"
+                )}"></option>`
+            )
+            .join("\n");
 
-    // Actions:
-    function setSearchQuery(query: string) {
-      state.searchQuery = query;
-
-      if (searchInput.value !== query) searchInput.value = query;
-
-      if (query) {
-        const lcQuery = query.toLowerCase();
-        const suggestions = graph
-          .nodes()
-          .map((n) => ({
-            id: n,
-            label: graph.getNodeAttribute(n, "label") as string,
-          }))
-          .filter(({ label }) => label.toLowerCase().includes(lcQuery));
-
-        // If we have a single perfect match, them we remove the suggestions, and
-        // we consider the user has selected a node through the datalist
-        // autocomplete:
-        if (suggestions.length === 1 && suggestions[0].label === query) {
-          state.selectedNode = suggestions[0].id;
-          state.suggestions = undefined;
-
-          // Move the camera to center it on the selected node:
-          const nodePosition = renderer.getNodeDisplayData(
-            state.selectedNode
-          ) as Coordinates;
-          renderer.getCamera().animate(nodePosition, {
-            duration: 500,
+          const graph = this.graph;
+          this.graph.nodes().forEach((node) => {
+            this.attributes.push(this.graph.getNodeAttributes(node));
           });
-        }
-        // Else, we display the suggestions list:
-        else {
-          state.selectedNode = undefined;
-          state.suggestions = new Set(suggestions.map(({ id }) => id));
-        }
-      }
-      // If the query is empty, then we reset the selectedNode / suggestions state:
-      else {
-        state.selectedNode = undefined;
-        state.suggestions = undefined;
-      }
+          console.log("Attr:");
+          console.log(this.attributes);
 
-      // Refresh rendering:
-      renderer.refresh();
-    }
-    function setHoveredNode(node?: string) {
-      if (node) {
-        state.hoveredNode = node;
-        state.hoveredNeighbors = new Set(graph.neighbors(node));
-      } else {
-        state.hoveredNode = undefined;
-        state.hoveredNeighbors = undefined;
-      }
+          // Actions:
+          function setSearchQuery(query: string) {
+            state.searchQuery = query;
+            console.log("Graph:", graph);
+            if (searchInput.value !== query) searchInput.value = query;
 
-      // Refresh rendering:
-      renderer.refresh();
-    }
+            if (query) {
+              const lcQuery = query.toLowerCase();
+              const suggestions = graph
+                .nodes()
+                .map((n) => ({
+                  id: n,
+                  label: graph.getNodeAttribute(n, "label") as string,
+                }))
+                .filter(({ label }) => label.toLowerCase().includes(lcQuery));
 
-    // Bind search input interactions:
-    searchInput.addEventListener("input", () => {
-      setSearchQuery(searchInput.value || "");
-    });
-    searchInput.addEventListener("blur", () => {
-      setSearchQuery("");
-    });
+              // If we have a single perfect match, them we remove the suggestions, and
+              // we consider the user has selected a node through the datalist
+              // autocomplete:
+              if (suggestions.length === 1 && suggestions[0].label === query) {
+                state.selectedNode = suggestions[0].id;
+                state.suggestions = undefined;
 
-    // Bind graph interactions:
-    renderer.on("enterNode", ({ node }) => {
-      if (!state.isDragging) {
-        setHoveredNode(node);
-      }
-    });
-    renderer.on("leaveNode", () => {
-      if (!state.isDragging) {
-        setHoveredNode(undefined);
-      }
-    });
+                // Move the camera to center it on the selected node:
+                const nodePosition = renderer.getNodeDisplayData(
+                  state.selectedNode
+                ) as Coordinates;
+                renderer.getCamera().animate(nodePosition, {
+                  duration: 500,
+                });
+              }
+              // Else, we display the suggestions list:
+              else {
+                state.selectedNode = undefined;
+                state.suggestions = new Set(suggestions.map(({ id }) => id));
+              }
+            }
+            // If the query is empty, then we reset the selectedNode / suggestions state:
+            else {
+              state.selectedNode = undefined;
+              state.suggestions = undefined;
+            }
 
-    // Render nodes accordingly to the internal state:
-    // 1. If a node is selected, it is highlighted
-    // 2. If there is query, all non-matching nodes are greyed
-    // 3. If there is a hovered node, all non-neighbor nodes are greyed
-    renderer.setSetting("nodeReducer", (node, data) => {
-      const res: Partial<NodeDisplayData> = { ...data };
+            // Refresh rendering:
+            renderer.refresh();
+          }
 
-      if (
-        state.hoveredNeighbors &&
-        !state.hoveredNeighbors.has(node) &&
-        state.hoveredNode !== node
-      ) {
-        res.label = "";
-        res.color = "#f6f6f6";
-      }
+          function setHoveredNode(node?: string) {
+            if (node) {
+              state.hoveredNode = node;
+              state.hoveredNeighbors = new Set(graph.neighbors(node));
+            } else {
+              state.hoveredNode = undefined;
+              state.hoveredNeighbors = undefined;
+            }
 
-      if (state.selectedNode === node) {
-        res.highlighted = true;
-      } else if (state.suggestions && !state.suggestions.has(node)) {
-        res.label = "";
-        res.color = "#f6f6f6";
-      }
+            // Refresh rendering:
+            renderer.refresh();
+          }
 
-      return res;
-    });
+          // Bind search input interactions:
+          searchInput.addEventListener("input", () => {
+            setSearchQuery(searchInput.value || "");
+          });
+          searchInput.addEventListener("blur", () => {
+            setSearchQuery("");
+          });
 
-    // Render edges accordingly to the internal state:
-    // 1. If a node is hovered, the edge is hidden if it is not connected to the
-    //    node
-    // 2. If there is a query, the edge is only visible if it connects two
-    //    suggestions
-    renderer.setSetting("edgeReducer", (edge, data) => {
-      const res: Partial<EdgeDisplayData> = { ...data };
+          // Bind graph interactions:
+          renderer.on("enterNode", ({ node }) => {
+            if (!state.isDragging) {
+              setHoveredNode(node);
+            }
+          });
+          renderer.on("leaveNode", () => {
+            if (!state.isDragging) {
+              setHoveredNode(undefined);
+            }
+          });
 
-      if (state.hoveredNode && !graph.hasExtremity(edge, state.hoveredNode)) {
-        res.hidden = true;
-      }
+          // Render nodes accordingly to the internal state:
+          // 1. If a node is selected, it is highlighted
+          // 2. If there is query, all non-matching nodes are greyed
+          // 3. If there is a hovered node, all non-neighbor nodes are greyed
+          renderer.setSetting("nodeReducer", (node, data) => {
+            const res: Partial<NodeDisplayData> = { ...data };
 
-      if (
-        state.suggestions &&
-        (!state.suggestions.has(graph.source(edge)) ||
-          !state.suggestions.has(graph.target(edge)))
-      ) {
-        res.hidden = true;
-      }
+            if (
+              state.hoveredNeighbors &&
+              !state.hoveredNeighbors.has(node) &&
+              state.hoveredNode !== node
+            ) {
+              res.label = "";
+              res.color = "#f6f6f6";
+            }
 
-      return res;
-    });
+            if (state.selectedNode === node) {
+              res.highlighted = true;
+            } else if (state.suggestions && !state.suggestions.has(node)) {
+              res.label = "";
+              res.color = "#f6f6f6";
+            }
 
-    //
-    // Drag'n'drop feature
-    // ~~~~~~~~~~~~~~~~~~~
-    //
+            return res;
+          });
 
-    // State for drag'n'drop
-    let draggedNode: string | null = null;
-    state.isDragging = false;
+          // Render edges accordingly to the internal state:
+          // 1. If a node is hovered, the edge is hidden if it is not connected to the
+          //    node
+          // 2. If there is a query, the edge is only visible if it connects two
+          //    suggestions
+          renderer.setSetting("edgeReducer", (edge, data) => {
+            const res: Partial<EdgeDisplayData> = { ...data };
 
-    // On mouse down on a node
-    //  - we enable the drag mode
-    //  - save in the dragged node in the state
-    //  - highlight the node
-    //  - disable the camera so its state is not updated
-    renderer.on("downNode", (e) => {
-      state.isDragging = true;
-      layout.stop();
-      draggedNode = e.node;
-      graph.setNodeAttribute(draggedNode, "highlighted", true);
-    });
+            if (
+              state.hoveredNode &&
+              !this.graph.hasExtremity(edge, state.hoveredNode)
+            ) {
+              res.hidden = true;
+            }
 
-    // On mouse move, if the drag mode is enabled, we change the position of the draggedNode
-    renderer.getMouseCaptor().on("mousemovebody", (e) => {
-      if (!state.isDragging || !draggedNode) return;
+            if (
+              state.suggestions &&
+              (!state.suggestions.has(this.graph.source(edge)) ||
+                !state.suggestions.has(this.graph.target(edge)))
+            ) {
+              res.hidden = true;
+            }
 
-      // Get new position of node
-      const pos = renderer.viewportToGraph(e);
+            return res;
+          });
 
-      graph.setNodeAttribute(draggedNode, "x", pos.x);
-      graph.setNodeAttribute(draggedNode, "y", pos.y);
+          //
+          // Drag'n'drop feature
+          // ~~~~~~~~~~~~~~~~~~~
+          //
 
-      // Prevent sigma to move camera:
-      e.preventSigmaDefault();
-      e.original.preventDefault();
-      e.original.stopPropagation();
-    });
+          // State for drag'n'drop
+          let draggedNode: string | null = null;
+          state.isDragging = false;
 
-    // On mouse up, we reset the autoscale and the dragging mode
-    renderer.getMouseCaptor().on("mouseup", () => {
-      if (draggedNode) {
-        graph.removeNodeAttribute(draggedNode, "highlighted");
-      }
-      state.isDragging = false;
-      // layout.start();
-      draggedNode = null;
-    });
+          // On mouse down on a node
+          //  - we enable the drag mode
+          //  - save in the dragged node in the state
+          //  - highlight the node
+          //  - disable the camera so its state is not updated
+          renderer.on("downNode", (e) => {
+            state.isDragging = true;
+            layout.stop();
+            draggedNode = e.node;
+            this.graph.setNodeAttribute(draggedNode, "highlighted", true);
+          });
 
-    // Disable the autoscale at the first down interaction
-    renderer.getMouseCaptor().on("mousedown", () => {
-      if (!renderer.getCustomBBox()) renderer.setCustomBBox(renderer.getBBox());
-    });
-  });
-export default class GraphComponent extends Vue {}
+          // On mouse move, if the drag mode is enabled, we change the position of the draggedNode
+          renderer.getMouseCaptor().on("mousemovebody", (e) => {
+            if (!state.isDragging || !draggedNode) return;
+
+            // Get new position of node
+            const pos = renderer.viewportToGraph(e);
+
+            this.graph.setNodeAttribute(draggedNode, "x", pos.x);
+            this.graph.setNodeAttribute(draggedNode, "y", pos.y);
+
+            // Prevent sigma to move camera:
+            e.preventSigmaDefault();
+            e.original.preventDefault();
+            e.original.stopPropagation();
+          });
+
+          // On mouse up, we reset the autoscale and the dragging mode
+          renderer.getMouseCaptor().on("mouseup", () => {
+            if (draggedNode) {
+              this.graph.removeNodeAttribute(draggedNode, "highlighted");
+            }
+            state.isDragging = false;
+            // layout.start();
+            draggedNode = null;
+          });
+
+          // Disable the autoscale at the first down interaction
+          renderer.getMouseCaptor().on("mousedown", () => {
+            if (!renderer.getCustomBBox())
+              renderer.setCustomBBox(renderer.getBBox());
+          });
+        });
+    },
+  },
+  mounted() {
+    // console.log(this.name);
+  },
+});
 </script>
 
 <style>

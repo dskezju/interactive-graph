@@ -12,6 +12,7 @@
   "dependencies": {
     "chroma-js": "^2.4.2",
     "core-js": "^3.8.3",
+    "element-plus": "^2.2.19",
     "graphology": "^0.25.0",
     "graphology-gexf": "^0.10.3",
     "graphology-layout": "^0.6.1",
@@ -19,7 +20,8 @@
     "sigma": "^2.3.1",
     "uuid": "^9.0.0",
     "vue": "^3.2.13",
-    "vue-class-component": "^8.0.0-0",
+    "vue-class-component": "^8.0.0-rc.1",
+    "vue-property-decorator": "^9.1.2",
     "vue-router": "^4.0.3",
     "vuex": "^4.0.0"
   },

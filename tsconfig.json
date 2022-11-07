@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "noImplicitAny": false,  // add this to solve "any-type" bug
     "target": "esnext",
     "module": "esnext",
     "strict": true,
