@@ -52,55 +52,73 @@ import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import FA2Layout from "graphology-layout-forceatlas2/worker";
 import forceAtlas2 from "graphology-layout-forceatlas2";
 import { Coordinates, EdgeDisplayData, NodeDisplayData } from "sigma/types";
-import LeftPanel from "@/components/LeftPanel.vue";
-import { defineComponent } from "vue";
 import circlepack from "graphology-layout/circlepack";
 import circular from "graphology-layout/circular";
 import { layoutAnimate } from "@/lib/layoutAnimation";
 import { drawHover } from "@/utils/canvas";
 import { isNil } from "lodash";
+import LeftPanel from "@/components/LeftPanel.vue";
+import { defineComponent } from "vue";
+export default defineComponent({
+  name: "GraphComponent",
+  components: {
+    LeftPanel,
+  },
+  data() {
+    return {
+      graph: new Graph(),
+      attributes: [],
+    };
+  },
+  created() {
+    this.initGraph();
+    // console.log("Finish")
+    // this.graph.nodes().forEach((node, i) => {
+    //   console.log(node, i);
+    //   console.log(this.graph.getNodeAttributes(node));
+    //   this.attributes.push(this.graph.getNodeAttributes(node));
+    // });
+    // console.log("Attr:");
+    // console.log(this.attributes);
+  },
+  methods: {
+    initGraph() {
+      fetch("http://10.109.92.74:8083/")
+        .then((res) => res.json())
+        .then((jsonObj) => {
+          const graph = new Graph();
+          graph.import(jsonObj);
 
-fetch("http://10.109.92.74:8083/")
-  .then((res) => res.json())
-  .then((jsonObj) => {
-    const graph = new Graph();
-    graph.import(jsonObj);
+          function colorize(str: string) {
+            for (
+              var i = 0, hash = 0;
+              i < str.length;
+              hash = str.charCodeAt(i++) + ((hash << 5) - hash)
+            );
+            let color = Math.floor(
+              Math.abs(((Math.sin(hash) * 10000) % 1) * 16777216)
+            ).toString(16);
+            return "#" + Array(6 - color.length + 1).join("0") + color;
+          }
 
-    function colorize(str: string) {
-      for (
-        var i = 0, hash = 0;
-        i < str.length;
-        hash = str.charCodeAt(i++) + ((hash << 5) - hash)
-      );
-      let color = Math.floor(
-        Math.abs(((Math.sin(hash) * 10000) % 1) * 16777216)
-      ).toString(16);
-      return "#" + Array(6 - color.length + 1).join("0") + color;
-    }
+          graph.forEachNode((node, attr) => {
+            attr.color = chroma(colorize(attr["labels"][0])).hex();
+            attr.label =
+              attr["productName"] ||
+              attr["companyName"] ||
+              attr["shipName"] ||
+              attr["categoryName"];
+            attr.size = attr["reorderLevel"] / 5;
+            return attr;
+          });
 
-    graph.forEachNode((node, attr) => {
-      attr.color = chroma(colorize(attr["labels"][0])).hex();
-      attr.label =
-        attr["productName"] ||
-        attr["companyName"] ||
-        attr["shipName"] ||
-        attr["categoryName"];
-      attr.size = attr["reorderLevel"] / 5;
-      return attr;
-    });
+          circular.assign(graph);
 
-    circular.assign(graph);
-
-fetch("./arctic.gexf")
-  .then((res) => res.text())
-  .then((gexf) => {
-    // Parse GEXF string:
-    const graph = parse(Graph, gexf);
-    const sensibleSettings = forceAtlas2.inferSettings(graph);
-    const layout = new FA2Layout(graph, {
-      settings: sensibleSettings,
-    });
-    layout.start();
+          const sensibleSettings = forceAtlas2.inferSettings(graph);
+          const layout = new FA2Layout(graph, {
+            settings: sensibleSettings,
+          });
+          // layout.start();
 
           // Retrieve some useful DOM elements:
           const container = document.getElementById(
@@ -120,7 +138,7 @@ fetch("./arctic.gexf")
           ) as HTMLInputElement;
 
           // Instanciate sigma:
-          const renderer = new Sigma(this.graph, container, {
+          const renderer = new Sigma(graph, container, {
             minCameraRatio: 0.001,
             maxCameraRatio: 1000,
             nodeProgramClasses: {
@@ -130,28 +148,28 @@ fetch("./arctic.gexf")
             renderEdgeLabels: true,
           });
 
-    graph.forEachNode((node, attr) => {
-      let subtitles: string[] = [];
-      for (const [key, value] of Object.entries(attr)) {
-        subtitles.push(
-          `${key}: ${
-            typeof value === "number" ? value.toLocaleString() : value
-          }`
-        );
-      }
-      attr.subtitles = subtitles;
-      return attr;
-    });
+          graph.forEachNode((node, attr) => {
+            let subtitles: string[] = [];
+            for (const [key, value] of Object.entries(attr)) {
+              subtitles.push(
+                `${key}: ${
+                  typeof value === "number" ? value.toLocaleString() : value
+                }`
+              );
+            }
+            attr.subtitles = subtitles;
+            return attr;
+          });
 
-    renderer.setSetting("hoverRenderer", (context, data, settings) =>
-      drawHover(
-        context,
-        { ...renderer.getNodeDisplayData(data.key), ...data },
-        settings
-      )
-    );
+          renderer.setSetting("hoverRenderer", (context, data, settings) =>
+            drawHover(
+              context,
+              { ...renderer.getNodeDisplayData(data.key), ...data },
+              settings
+            )
+          );
 
-    const camera = renderer.getCamera();
+          const camera = renderer.getCamera();
 
           // Bind zoom manipulation buttons
           zoomInBtn.addEventListener("click", () => {
@@ -181,53 +199,53 @@ fetch("./arctic.gexf")
           // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
           //
 
-    // When clicking on the stage, we add a new node and connect it to the closest node
-    renderer.on(
-      "clickStage",
-      ({ event }: { event: { x: number; y: number } }) => {
-        // // Sigma (ie. graph) and screen (viewport) coordinates are not the same.
-        // // So we need to translate the screen x & y coordinates to the graph one by calling the sigma helper `viewportToGraph`
-        // const coordForGraph = renderer.viewportToGraph({
-        //   x: event.x,
-        //   y: event.y,
-        // });
+          // When clicking on the stage, we add a new node and connect it to the closest node
+          renderer.on(
+            "clickStage",
+            ({ event }: { event: { x: number; y: number } }) => {
+              // // Sigma (ie. graph) and screen (viewport) coordinates are not the same.
+              // // So we need to translate the screen x & y coordinates to the graph one by calling the sigma helper `viewportToGraph`
+              // const coordForGraph = renderer.viewportToGraph({
+              //   x: event.x,
+              //   y: event.y,
+              // });
 
-        // // We create a new node
-        // const node = {
-        //   ...coordForGraph,
-        //   size: 4,
-        //   color: chroma.random().hex(),
-        //   // type: "border",
-        // };
+              // // We create a new node
+              // const node = {
+              //   ...coordForGraph,
+              //   size: 4,
+              //   color: chroma.random().hex(),
+              //   // type: "border",
+              // };
 
-        // // Searching the two closest nodes to auto-create an edge to it
-        // const closestNodes = graph
-        //   .nodes()
-        //   .map((nodeId) => {
-        //     const attrs = graph.getNodeAttributes(nodeId);
-        //     const distance =
-        //       Math.pow(node.x - attrs.x, 2) + Math.pow(node.y - attrs.y, 2);
-        //     return { nodeId, distance };
-        //   })
-        //   .sort((a, b) => a.distance - b.distance)
-        //   .slice(0, 2);
+              // // Searching the two closest nodes to auto-create an edge to it
+              // const closestNodes = graph
+              //   .nodes()
+              //   .map((nodeId) => {
+              //     const attrs = graph.getNodeAttributes(nodeId);
+              //     const distance =
+              //       Math.pow(node.x - attrs.x, 2) + Math.pow(node.y - attrs.y, 2);
+              //     return { nodeId, distance };
+              //   })
+              //   .sort((a, b) => a.distance - b.distance)
+              //   .slice(0, 2);
 
-        // // We register the new node into graphology instance
-        // const id = uuid();
-        // graph.addNode(id, node);
+              // // We register the new node into graphology instance
+              // const id = uuid();
+              // graph.addNode(id, node);
 
-        // // We create the edges
-        // closestNodes.forEach((e) => graph.addEdge(id, e.nodeId));
+              // // We create the edges
+              // closestNodes.forEach((e) => graph.addEdge(id, e.nodeId));
 
-        layoutAnimate(
-          graph,
-          circlepack(graph, {
-            hierarchyAttributes: ["labels"],
-            scale: 0.005,
-          })
-        );
-      }
-    );
+              layoutAnimate(
+                graph,
+                circlepack(graph, {
+                  hierarchyAttributes: ["labels"],
+                  scale: 0.005,
+                })
+              );
+            }
+          );
 
           //
           // highlight and search
@@ -258,28 +276,21 @@ fetch("./arctic.gexf")
           const state: State = { searchQuery: "", isDragging: false };
 
           // Feed the datalist autocomplete values:
-          searchSuggestions.innerHTML = this.graph
+          searchSuggestions.innerHTML = graph
             .nodes()
             .map(
               (node) =>
-                `<option value="${this.graph.getNodeAttribute(
+                `<option value="${graph.getNodeAttribute(
                   node,
                   "label"
                 )}"></option>`
             )
             .join("\n");
 
-          const graph = this.graph;
-          this.graph.nodes().forEach((node) => {
-            this.attributes.push(this.graph.getNodeAttributes(node));
-          });
-          console.log("Attr:");
-          console.log(this.attributes);
-
           // Actions:
           function setSearchQuery(query: string) {
             state.searchQuery = query;
-            console.log("Graph:", graph);
+
             if (searchInput.value !== query) searchInput.value = query;
 
             if (query) {
@@ -322,7 +333,6 @@ fetch("./arctic.gexf")
             // Refresh rendering:
             renderer.refresh();
           }
-
           function setHoveredNode(node?: string) {
             if (node) {
               state.hoveredNode = node;
@@ -392,15 +402,15 @@ fetch("./arctic.gexf")
 
             if (
               state.hoveredNode &&
-              !this.graph.hasExtremity(edge, state.hoveredNode)
+              !graph.hasExtremity(edge, state.hoveredNode)
             ) {
               res.hidden = true;
             }
 
             if (
               state.suggestions &&
-              (!state.suggestions.has(this.graph.source(edge)) ||
-                !state.suggestions.has(this.graph.target(edge)))
+              (!state.suggestions.has(graph.source(edge)) ||
+                !state.suggestions.has(graph.target(edge)))
             ) {
               res.hidden = true;
             }
@@ -426,7 +436,7 @@ fetch("./arctic.gexf")
             state.isDragging = true;
             layout.stop();
             draggedNode = e.node;
-            this.graph.setNodeAttribute(draggedNode, "highlighted", true);
+            graph.setNodeAttribute(draggedNode, "highlighted", true);
           });
 
           // On mouse move, if the drag mode is enabled, we change the position of the draggedNode
@@ -436,8 +446,8 @@ fetch("./arctic.gexf")
             // Get new position of node
             const pos = renderer.viewportToGraph(e);
 
-            this.graph.setNodeAttribute(draggedNode, "x", pos.x);
-            this.graph.setNodeAttribute(draggedNode, "y", pos.y);
+            graph.setNodeAttribute(draggedNode, "x", pos.x);
+            graph.setNodeAttribute(draggedNode, "y", pos.y);
 
             // Prevent sigma to move camera:
             e.preventSigmaDefault();
@@ -448,7 +458,7 @@ fetch("./arctic.gexf")
           // On mouse up, we reset the autoscale and the dragging mode
           renderer.getMouseCaptor().on("mouseup", () => {
             if (draggedNode) {
-              this.graph.removeNodeAttribute(draggedNode, "highlighted");
+              graph.removeNodeAttribute(draggedNode, "highlighted");
             }
             state.isDragging = false;
             // layout.start();
