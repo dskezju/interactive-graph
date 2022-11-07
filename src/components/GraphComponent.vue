@@ -81,7 +81,10 @@ fetch("http://10.109.92.74:8083/")
     graph.forEachNode((node, attr) => {
       attr.color = chroma(colorize(attr["labels"][0])).hex();
       attr.label =
-        attr["productName"] || attr["companyName"] || attr["shipName"];
+        attr["productName"] ||
+        attr["companyName"] ||
+        attr["shipName"] ||
+        attr["categoryName"];
       attr.size = attr["reorderLevel"] / 5;
       return attr;
     });
@@ -220,7 +223,7 @@ fetch("./arctic.gexf")
           graph,
           circlepack(graph, {
             hierarchyAttributes: ["labels"],
-            scale: 0.02,
+            scale: 0.005,
           })
         );
       }
