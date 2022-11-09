@@ -61,6 +61,7 @@ import LeftPanel from "@/components/LeftPanel.vue";
 import { defineComponent } from "vue";
 
 import store from "@/store";
+import axios from "axios";
 
 export default defineComponent({
   name: "GraphComponent",
@@ -86,8 +87,12 @@ export default defineComponent({
   },
   methods: {
     initGraph() {
-      fetch("http://10.109.92.74:8083/")
-        .then((res) => res.json())
+      /* *****2022.11.9****** */
+      axios({
+        method: "GET",
+        url: "http://10.109.92.74:8083/",
+      })
+        .then((res) => res.data)
         .then((jsonObj) => {
           const graph = new Graph();
           graph.import(jsonObj);
@@ -250,13 +255,24 @@ export default defineComponent({
               // // We create the edges
               // closestNodes.forEach((e) => graph.addEdge(id, e.nodeId));
 
-              layoutAnimate(
-                graph,
-                circlepack(graph, {
-                  hierarchyAttributes: ["labels"],
-                  scale: 0.005,
-                })
-              );
+              // layoutAnimate(
+              //   graph,
+              //   circlepack(graph, {
+              //     hierarchyAttributes: ["labels"],
+              //     scale: 0.005,
+              //   })
+              // );
+
+              /* Input:  */
+              axios({
+                method: "POST",
+                url: "http://10.107.136.93:8083/",
+                data: {
+                  attributes: {
+                    categoryID: "1",
+                  },
+                },
+              });
             }
           );
 
