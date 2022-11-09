@@ -266,10 +266,15 @@ export default defineComponent({
               /* Input:  */
               axios({
                 method: "POST",
-                url: "http://10.107.136.93:8083/",
+                url: "http://10.107.136.93:8083/node",
                 data: {
-                  attributes: {
-                    categoryID: "1",
+                  method: "add",
+                  node: {
+                    key: 1,
+                    attributes: {
+                      // label: "node_label",
+                      attribute: "attribute1_test",
+                    },
                   },
                 },
               });
