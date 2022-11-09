@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/neo4j/neo4j-go-driver/v4/neo4j"
 	// "io"
@@ -24,17 +25,24 @@ type Neo4jConfiguration struct {
 	Database string
 }
 
-type D3Response struct {
+type GarphologyResponse struct {
 	Nodes []Node `json:"nodes"`
-	Links []Link `json:"edges"`
+	Links []Edge `json:"edges"`
+}
+type NodeRequest struct {
+	Method string `json:"method"`
+	Node   `json:"node"`
 }
 
+type AddNodeResult struct {
+	Updates int `json:"updates"`
+}
 type Node struct {
 	Identity   int64                  `json:"key"`
 	Properties map[string]interface{} `json:"attributes,omitempty"`
 }
 
-type Link struct {
+type Edge struct {
 	Identity int64 `json:"key"`
 	// Type       string                 `json:"type"`
 	Start      int64                  `json:"source"`
@@ -112,7 +120,7 @@ func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter
 				return nil, err
 			}
 
-			result := D3Response{}
+			result := GarphologyResponse{}
 			for records_node.Next() {
 				record := records_node.Record()
 				// fmt.Printf("%s\n", record)
@@ -159,7 +167,7 @@ func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter
 				startID, _ := record.Get("srid")
 				endID, _ := record.Get("erid")
 
-				link := Link{}
+				link := Edge{}
 				if rec, ok := identity.(int64); ok {
 					link.Identity = rec
 				} else {
@@ -210,6 +218,85 @@ func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter
 		}
 	}
 }
+func nodeHandler(driver neo4j.Driver, database string) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		switch req.Method {
+		case "OPTIONS":
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			return
+		case "POST":
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			defer req.Body.Close()
+			buf, err := io.ReadAll(req.Body)
+			if err != nil {
+				panic(err)
+			}
+			// fmt.Println(buf)
+			var nReq NodeRequest
+			json.NewDecoder(strings.NewReader(string(buf))).Decode(&nReq)
+			session := driver.NewSession(neo4j.SessionConfig{
+				AccessMode:   neo4j.AccessModeRead,
+				DatabaseName: database,
+			})
+			defer unsafeClose(session)
+			if nReq.Method == "add" {
+				addNode(w, req, session, nReq.Node)
+			} else {
+				fmt.Println("to be continue ...")
+			}
+		}
+	}
+}
+
+func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, newnode Node) {
+
+	// fmt.Println("*****")
+	// fmt.Println(newnode.Properties)
+	// var buffer bytes.Buffer
+	// buffer.WriteString("CREATE (n:Person")
+	// for key, _ := range newnode.Properties {
+	// 	buffer.WriteString(key)
+	// 	buffer.WriteString(": $")
+	// 	buffer.WriteString(key)
+	// }
+	// buffer.WriteString(")")
+	// _ = buffer.String()
+	var attribute string
+	for _, val := range newnode.Properties {
+		attribute = val.(string)
+	}
+	add_node_cypher := `CREATE (n:TestNodeLabel {nodeAttribute: $attribute})`
+	// add_node_cypher := `
+	// 	CREATE (n:Person {nodetype: $nodetype})
+	// `
+	// session.WriteTransaction()
+	addNodeResp, err := session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
+		result, err := tx.Run(add_node_cypher,
+			map[string]interface{}{"attribute": attribute})
+		if err != nil {
+			return nil, err
+		}
+		// fmt.Println(result)
+		var summary, _ = result.Consume()
+		var addNodeResult AddNodeResult
+		addNodeResult.Updates = summary.Counters().PropertiesSet()
+		// result := GarphologyResponse{}
+		fmt.Println(addNodeResult)
+		return result, nil
+	})
+	if err != nil {
+		log.Println("error adding node:", err)
+		return
+	}
+	err = json.NewEncoder(w).Encode(addNodeResp)
+	if err != nil {
+		log.Println("error writing node response:", err)
+	}
+
+}
 
 func main() {
 	configuration := parseConfiguration()
@@ -222,6 +309,7 @@ func main() {
 	serveMux := http.NewServeMux()
 	// serveMux.HandleFunc("/", defaultHandler)
 	serveMux.HandleFunc("/", graphHandler(driver, configuration.Database))
+	serveMux.HandleFunc("/node", nodeHandler(driver, configuration.Database))
 	fmt.Println(configuration)
 
 	var port string
