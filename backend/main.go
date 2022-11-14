@@ -246,6 +246,8 @@ func nodeHandler(driver neo4j.Driver, database string) func(http.ResponseWriter,
 				addNode(w, req, session, nReq.Node)
 			} else if nReq.Method == "delete" {
 				deleteNode(w, req, session, nReq.Node)
+			} else if nReq.Method == "update" {
+				updateNode(w, req, session, nReq.Node)
 			} else {
 				fmt.Println("to be continue ...")
 			}
@@ -319,10 +321,10 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 
 func deleteNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, newnode Node) {
 	nodeID := newnode.Identity
-	add_node_cypher := `MATCH (n) WHERE ID(n) = $nodeID DELETE (n)`
-	fmt.Println(add_node_cypher)
+	addNodeCypher := `MATCH (n) WHERE ID(n) = $nodeID DELETE (n)`
+	fmt.Println(addNodeCypher)
 	addNodeResp, err := session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
-		result, err := tx.Run(add_node_cypher, map[string]interface{}{
+		result, err := tx.Run(addNodeCypher, map[string]interface{}{
 			"nodeID": nodeID,
 		})
 		if err != nil {
@@ -347,6 +349,68 @@ func deleteNode(w http.ResponseWriter, req *http.Request, session neo4j.Session,
 	}
 }
 
+func updateNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, newnode Node) {
+	nodeID := newnode.Identity
+	NODE_LABEL := "labels"
+
+	var buffer bytes.Buffer
+	buffer.WriteString("MATCH (n) WHERE ID(n) = $nodeID ")
+	for key, val := range newnode.Properties {
+		if key == NODE_LABEL {
+			buffer.WriteString("SET n:")
+			if rec, ok := val.(string); ok {
+				buffer.WriteString(rec)
+				buffer.WriteString(" ")
+			} else {
+				log.Println("error: the type of 'label' is not string.")
+			}
+		} else {
+			buffer.WriteString("SET n.")
+			buffer.WriteString(key)
+			buffer.WriteString("=")
+			if rec, ok := val.(string); ok {
+				buffer.WriteString("'")
+				buffer.WriteString(rec)
+				buffer.WriteString("' ")
+			} else {
+				log.Println("error: the type of 'label' is not string.")
+			}
+		}
+
+	}
+	buffer.WriteString("RETURN (n)")
+	updateNodeCypher := buffer.String()
+	fmt.Println(updateNodeCypher)
+	updateNodeResp, err := session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
+		result, err := tx.Run(updateNodeCypher, map[string]interface{}{
+			"nodeID": nodeID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(result)
+		var summary, _ = result.Consume()
+		var updateNodeResult NodeResult
+
+		if summary.Counters().ContainsUpdates() {
+			updateNodeResult.Success = 1
+		} else {
+			updateNodeResult.Success = 0
+		}
+
+		fmt.Println(updateNodeResult)
+		// return the number of nodes created.
+		return updateNodeResult, nil
+	})
+	if err != nil {
+		log.Println("error adding node:", err)
+		return
+	}
+	err = json.NewEncoder(w).Encode(updateNodeResp)
+	if err != nil {
+		log.Println("error writing node response:", err)
+	}
+}
 func main() {
 	configuration := parseConfiguration()
 

@@ -281,14 +281,33 @@ export default defineComponent({
               //     },
               //   },
               // });
-              /* delete node test */
+
+              /* delete node by key test */
+              // axios({
+              //   method: "POST",
+              //   url: "http://localhost:8083/node",
+              //   data: {
+              //     method: "delete",
+              //     payload: {
+              //       key: 1042,
+              //     },
+              //   },
+              // });
+
+              /* update node by key test */
               axios({
                 method: "POST",
                 url: "http://localhost:8083/node",
                 data: {
-                  method: "delete",
+                  method: "update",
                   payload: {
-                    key: 1042,
+                    key: 1045,
+                    attributes: {
+                      labels: "Label_update",
+                      attribute1: "attribute1_update",
+                      attribute2: "attribute2",
+                      // attribute3: "attribute3",
+                    },
                   },
                 },
               });
