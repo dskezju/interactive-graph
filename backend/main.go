@@ -35,7 +35,7 @@ type NodeRequest struct {
 	Node   `json:"payload"`
 }
 
-type AddNodeResult struct {
+type NodeResult struct {
 	Success int `json:"success"`
 }
 type Node struct {
@@ -217,6 +217,7 @@ func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter
 		}
 	}
 }
+
 func nodeHandler(driver neo4j.Driver, database string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		switch req.Method {
@@ -243,6 +244,8 @@ func nodeHandler(driver neo4j.Driver, database string) func(http.ResponseWriter,
 			defer unsafeClose(session)
 			if nReq.Method == "add" {
 				addNode(w, req, session, nReq.Node)
+			} else if nReq.Method == "delete" {
+				deleteNode(w, req, session, nReq.Node)
 			} else {
 				fmt.Println("to be continue ...")
 			}
@@ -297,7 +300,7 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 		}
 		// fmt.Println(result)
 		var summary, _ = result.Consume()
-		var addNodeResult AddNodeResult
+		var addNodeResult NodeResult
 		addNodeResult.Success = summary.Counters().NodesCreated()
 		fmt.Println(addNodeResult)
 
@@ -315,7 +318,33 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 }
 
 func deleteNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, newnode Node) {
+	nodeID := newnode.Identity
+	add_node_cypher := `MATCH (n) WHERE ID(n) = $nodeID DELETE (n)`
+	fmt.Println(add_node_cypher)
+	addNodeResp, err := session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
+		result, err := tx.Run(add_node_cypher, map[string]interface{}{
+			"nodeID": nodeID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(result)
+		var summary, _ = result.Consume()
+		var deleteNodeResult NodeResult
+		deleteNodeResult.Success = summary.Counters().NodesDeleted()
+		fmt.Println(deleteNodeResult)
 
+		// return the number of nodes created.
+		return deleteNodeResult, nil
+	})
+	if err != nil {
+		log.Println("error adding node:", err)
+		return
+	}
+	err = json.NewEncoder(w).Encode(addNodeResp)
+	if err != nil {
+		log.Println("error writing node response:", err)
+	}
 }
 
 func main() {
