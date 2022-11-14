@@ -90,7 +90,7 @@ export default defineComponent({
       /* *****2022.11.9****** */
       axios({
         method: "GET",
-        url: "http://10.109.92.74:8083/",
+        url: "http://localhost:8083/",
       })
         .then((res) => res.data)
         .then((jsonObj) => {
@@ -266,14 +266,16 @@ export default defineComponent({
               /* Input:  */
               axios({
                 method: "POST",
-                url: "http://10.107.136.93:8083/node",
+                url: "http://localhost:8083/node",
                 data: {
                   method: "add",
-                  node: {
-                    key: 1,
+                  payload: {
+                    // key: 1,
                     attributes: {
-                      // label: "node_label",
-                      attribute: "attribute1_test",
+                      labels: "Label_test",
+                      attribute1: "attribute1",
+                      attribute2: "attribute2",
+                      attribute3: "attribute3",
                     },
                   },
                 },

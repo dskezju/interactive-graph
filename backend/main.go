@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -31,11 +32,11 @@ type GarphologyResponse struct {
 }
 type NodeRequest struct {
 	Method string `json:"method"`
-	Node   `json:"node"`
+	Node   `json:"payload"`
 }
 
 type AddNodeResult struct {
-	Updates int `json:"updates"`
+	Success int `json:"success"`
 }
 type Node struct {
 	Identity   int64                  `json:"key"`
@@ -108,12 +109,10 @@ func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter
 		defer unsafeClose(session)
 
 		limit := 1000000
-		query_nodes := `MATCH (n)
-				  	RETURN labels(n) as l, ID(n) as id, properties(n) as p
-                `
-		query_edges := `MATCH (sr)-[r]->(er)
-		 		 	RETURN ID(r) as rid,  properties(r) as rprops, type(r) as rtype, ID(sr) as srid, ID(er) as erid
-                `
+		query_nodes := `MATCH (n) RETURN labels(n) as l, ID(n) as id, properties(n) as p `
+		query_edges := `MATCH (sr)-[r]->(er) RETURN ID(r) as rid,  properties(r) as rprops, type(r) as rtype, ID(sr) as srid, ID(er) as erid`
+		fmt.Println(query_nodes)
+		fmt.Println(query_edges)
 		d3Resp, err := session.ReadTransaction(func(tx neo4j.Transaction) (interface{}, error) {
 			records_node, err := tx.Run(query_nodes, map[string]interface{}{"limit": limit})
 			if err != nil {
@@ -162,8 +161,8 @@ func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter
 				// fmt.Printf("%s\n", record)
 
 				identity, _ := record.Get("rid")
-				// properties, _ := record.Get("rprops")
-				// rtype, _ := record.Get("rtype")
+				properties, _ := record.Get("rprops")
+				rtype, _ := record.Get("rtype")
 				startID, _ := record.Get("srid")
 				endID, _ := record.Get("erid")
 
@@ -186,21 +185,21 @@ func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter
 					fmt.Printf("endID not a int: %v\n", endID)
 				}
 
-				// if rec_p, ok := properties.(map[string]interface{}); ok {
-				// 	// add type of link to properties
-				// 	if rec_t, ok := rtype.(string); ok {
-				// 		rec_p["type"] = rec_t
-				// 	} else {
-				// 		fmt.Printf("rec_t not a string: %v\n", rtype)
-				// 	}
+				if rec_p, ok := properties.(map[string]interface{}); ok {
+					// add type of link to properties
+					if rec_t, ok := rtype.(string); ok {
+						rec_p["edge_type"] = rec_t
+					} else {
+						fmt.Printf("rec_t not a string: %v\n", rtype)
+					}
 
-				// 	link.Properties = rec_p
-				// 	// for key, val := range rec {
-				// 	// 	fmt.Println(key, val)
-				// 	// }
-				// } else {
-				// 	fmt.Printf("record not a map[string]interface{}: %v\n", record)
-				// }
+					link.Properties = rec_p
+					// for key, val := range rec {
+					// 	fmt.Println(key, val)
+					// }
+				} else {
+					fmt.Printf("record not a map[string]interface{}: %v\n", record)
+				}
 
 				result.Links = append(result.Links, link)
 
@@ -252,40 +251,58 @@ func nodeHandler(driver neo4j.Driver, database string) func(http.ResponseWriter,
 }
 
 func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, newnode Node) {
+	NODE_LABEL := "labels"
 
-	// fmt.Println("*****")
-	// fmt.Println(newnode.Properties)
-	// var buffer bytes.Buffer
-	// buffer.WriteString("CREATE (n:Person")
-	// for key, _ := range newnode.Properties {
-	// 	buffer.WriteString(key)
-	// 	buffer.WriteString(": $")
-	// 	buffer.WriteString(key)
-	// }
-	// buffer.WriteString(")")
-	// _ = buffer.String()
-	var attribute string
-	for _, val := range newnode.Properties {
-		attribute = val.(string)
+	var buffer bytes.Buffer
+	buffer.WriteString("CREATE (n")
+	for key, val := range newnode.Properties {
+		if key == NODE_LABEL {
+			buffer.WriteString(":")
+			if rec, ok := val.(string); ok {
+				buffer.WriteString(rec)
+			} else {
+				log.Println("error: the type of 'label' is not string.")
+			}
+			break
+		}
 	}
-	add_node_cypher := `CREATE (n:TestNodeLabel {nodeAttribute: $attribute})`
-	// add_node_cypher := `
-	// 	CREATE (n:Person {nodetype: $nodetype})
-	// `
-	// session.WriteTransaction()
+	buffer.WriteString("{")
+	index := 0
+	for key, val := range newnode.Properties {
+		if key == NODE_LABEL {
+			continue
+		}
+		if index != 0 {
+			buffer.WriteString(", ")
+		}
+		index++
+		buffer.WriteString(key)
+		buffer.WriteString(": ")
+		if rec, ok := val.(string); ok {
+			buffer.WriteString("'")
+			buffer.WriteString(rec)
+			buffer.WriteString("'")
+		} else {
+			log.Println("error: the type of attribute is not string.")
+		}
+	}
+	buffer.WriteString("})")
+
+	add_node_cypher := buffer.String()
+	fmt.Println(add_node_cypher)
 	addNodeResp, err := session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
-		result, err := tx.Run(add_node_cypher,
-			map[string]interface{}{"attribute": attribute})
+		result, err := tx.Run(add_node_cypher, nil)
 		if err != nil {
 			return nil, err
 		}
 		// fmt.Println(result)
 		var summary, _ = result.Consume()
 		var addNodeResult AddNodeResult
-		addNodeResult.Updates = summary.Counters().PropertiesSet()
-		// result := GarphologyResponse{}
+		addNodeResult.Success = summary.Counters().NodesCreated()
 		fmt.Println(addNodeResult)
-		return result, nil
+
+		// return the number of nodes created.
+		return addNodeResult, nil
 	})
 	if err != nil {
 		log.Println("error adding node:", err)
@@ -295,6 +312,9 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 	if err != nil {
 		log.Println("error writing node response:", err)
 	}
+}
+
+func deleteNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, newnode Node) {
 
 }
 
