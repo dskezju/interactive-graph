@@ -42,7 +42,7 @@
 
 <script lang="ts">
 import Sigma from "sigma";
-import Graph from "graphology";
+import Graph, { MultiGraph } from "graphology";
 import { parse } from "graphology-gexf/browser";
 import { Vue } from "vue-class-component";
 import chroma from "chroma-js";
@@ -94,7 +94,7 @@ export default defineComponent({
       })
         .then((res) => res.data)
         .then((jsonObj) => {
-          const graph = new Graph();
+          const graph = new MultiGraph();
           graph.import(jsonObj);
 
           store.dispatch("set", {
@@ -282,31 +282,48 @@ export default defineComponent({
               //   },
               // });
 
-              /* delete node by key test */
+              /* delete node and its relationships by key test */
               // axios({
               //   method: "POST",
               //   url: "http://localhost:8083/node",
               //   data: {
               //     method: "delete",
               //     payload: {
-              //       key: 1042,
+              //       key: 1046,
               //     },
               //   },
               // });
 
               /* update node by key test */
+              // axios({
+              //   method: "POST",
+              //   url: "http://localhost:8083/node",
+              //   data: {
+              //     method: "update",
+              //     payload: {
+              //       key: 1045,
+              //       attributes: {
+              //         labels: "Label_update",
+              //         attribute1: "attribute1_update",
+              //         attribute2: "attribute2",
+              //         // attribute3: "attribute3",
+              //       },
+              //     },
+              //   },
+              // });
+
+              /* add relation test */
               axios({
                 method: "POST",
-                url: "http://localhost:8083/node",
+                url: "http://localhost:8083/edge",
                 data: {
-                  method: "update",
+                  method: "add",
                   payload: {
-                    key: 1045,
+                    source: 1048,
+                    target: 1049,
                     attributes: {
-                      labels: "Label_update",
-                      attribute1: "attribute1_update",
-                      attribute2: "attribute2",
-                      // attribute3: "attribute3",
+                      type: "TYPE_TEST",
+                      attribute1: "attribute1",
                     },
                   },
                 },
