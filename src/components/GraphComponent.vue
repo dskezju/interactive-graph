@@ -36,9 +36,20 @@
         />
         <datalist id="suggestions"></datalist>
       </div>
-      <div id="menu">
+      <div id="nodeContextMenu">
         <div>
-          <button id="delete-button" @click="handleDeleteClick">Delete</button>
+          <button id="nodeDelete" @click="handleNodeDeleteClick">delete</button>
+        </div>
+      </div>
+      <div id="edgeContextMenu">
+        <div>
+          <button id="edgeDelete" @click="handleNodeDeleteClick">delete</button>
+        </div>
+      </div>
+      <div id="stageContextMenu">
+        <div>
+          <button id="nodeAdd" @click="handleNodeAddClick">add node</button>
+          <button id="edgeAdd" @click="handleEdgeAddClick">add edge</button>
         </div>
       </div>
     </el-main>
@@ -48,10 +59,7 @@
 <script lang="ts">
 import Sigma from "sigma";
 import Graph, { MultiGraph } from "graphology";
-import { parse } from "graphology-gexf/browser";
-import { Vue } from "vue-class-component";
 import chroma from "chroma-js";
-import { v4 as uuid } from "uuid";
 import NodeProgramFull from "./webgl/programs/node.full";
 import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import FA2Layout from "graphology-layout-forceatlas2/worker";
@@ -61,7 +69,6 @@ import circlepack from "graphology-layout/circlepack";
 import circular from "graphology-layout/circular";
 import { layoutAnimate } from "@/lib/layoutAnimation";
 import { drawHover } from "@/utils/canvas";
-import { isNil } from "lodash";
 import LeftPanel from "@/components/LeftPanel.vue";
 import { defineComponent } from "vue";
 
@@ -84,19 +91,8 @@ export default defineComponent({
   },
   created() {
     this.initGraph();
-    // console.log("Finish")
-    // this.graph.nodes().forEach((node, i) => {
-    //   console.log(node, i);
-    //   console.log(this.graph.getNodeAttributes(node));
-    //   this.attributes.push(this.graph.getNodeAttributes(node));
-    // });
-    // console.log("Attr:");
-    // console.log(this.attributes);
   },
   methods: {
-    handleDeleteClick() {
-      console.log("Delete");
-    },
     initGraph() {
       /* *****2022.11.9****** */
       axios({
@@ -105,9 +101,12 @@ export default defineComponent({
       })
         .then((res) => res.data)
         .then((jsonObj) => {
-
           const graph = new MultiGraph();
           this.graph = graph;
+          store.dispatch("set", {
+            key: "graph",
+            value: graph,
+          });
 
           graph.import(jsonObj);
 
@@ -175,15 +174,14 @@ export default defineComponent({
           });
 
           renderer.on("rightClickNode", ({ node }) => {
-            console.log("Clicked node:", node, graph.getNodeAttributes(node));
             // show menu
-            const menuNode = document.getElementById("menu") as HTMLElement;
+            const menuNode = document.getElementById(
+              "nodeContextMenu"
+            ) as HTMLElement;
             menuNode.style.display = "initial";
             menuNode.style.top = graph.getNodeAttribute(node, "y") + 4 + "px";
             menuNode.style.left = graph.getNodeAttribute(node, "x") + 4 + "px";
           });
-
-          var menuNode = document.getElementById("delete-button");
 
           graph.forEachNode((node, attr) => {
             let subtitles: string[] = [];
@@ -238,7 +236,7 @@ export default defineComponent({
 
           // When clicking on the stage, we add a new node and connect it to the closest node
           renderer.on(
-            "clickStage",
+            "rightClickStage",
             ({ event }: { event: { x: number; y: number } }) => {
               // // Sigma (ie. graph) and screen (viewport) coordinates are not the same.
               // // So we need to translate the screen x & y coordinates to the graph one by calling the sigma helper `viewportToGraph`
@@ -533,13 +531,13 @@ export default defineComponent({
           renderer.on("downNode", (e) => {
             state.isDragging = true;
             state.selectedNode = e.node;
+            store.dispatch("set", {
+              key: "graphNodeSelected",
+              value: e.node,
+            });
             this.fa2layout.stop();
             draggedNode = e.node;
             graph.setNodeAttribute(draggedNode, "highlighted", true);
-            const menuNode = document.getElementById("menu") as HTMLElement;
-            menuNode.style.display = "initial";
-            menuNode.style.top = e.event.original.clientY + "px";
-            menuNode.style.left = e.event.original.clientX + "px";
           });
 
           // On mouse move, if the drag mode is enabled, we change the position of the draggedNode
@@ -576,6 +574,10 @@ export default defineComponent({
 
           renderer.on("clickStage", (e) => {
             state.selectedNode = undefined;
+            store.dispatch("set", {
+              key: "graphNodeSelected",
+              value: null,
+            });
           });
         });
     },
@@ -601,6 +603,27 @@ export default defineComponent({
         fa2layout.start();
       }
       return 0;
+    },
+    handleNodeRightClick(e) {
+      console.log(e);
+      e.preventDefault();
+      e.original.preventDefault();
+      console.log(e);
+    },
+    handleStageRightClick(e) {
+      console.log(e);
+    },
+    handleNodeDeleteClick(e) {
+      console.log(e);
+    },
+    handleNodeAddClick(e) {
+      console.log(e);
+    },
+    handleEdgeDeleteClick(e) {
+      console.log(e);
+    },
+    handleEdgeAddClick(e) {
+      console.log(e);
     },
   },
   mounted() {

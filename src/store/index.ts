@@ -5,6 +5,8 @@ export default createStore({
     graphNodeCount: 0,
     graphEdgeCount: 0,
     graphLayout: "",
+    graph: null,
+    graphNodeSelected: null,
   },
   getters: {},
   mutations: {

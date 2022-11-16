@@ -6,7 +6,7 @@
     @tab-change="handleClick"
     style="margin-top: 10px; margin-left: 10px"
   >
-    <el-tab-pane label="Edit" name="Edit">
+    <!-- <el-tab-pane label="Edit" name="Edit">
       <div class="titleText">Knowledge Graph Visulization</div>
       <div class="normaltext">
         To change settings in the following part to better illustrate graph
@@ -51,15 +51,26 @@
         placeholder="Please select"
         default="Default - All edges are gray"
       />
-    </el-tab-pane>
-    <el-tab-pane label="Visualize" name="Visualize">
-      <div class="titleText">City Knowledge Graph</div>
-      <div class="informtext">Node: {{ $store.state.graphNodeCount }}</div>
-      <div class="informtext">Edges: {{ $store.state.graphEdgeCount }}</div>
+    </el-tab-pane> -->
+    <el-tab-pane label="Data" name="Data">
+      <div class="titleText">Knowledge Graph Title</div>
+      <div class="informtext">Node: {{ getGraphNodeCount() }}</div>
+      <div class="informtext">Edges: {{ getGraphEdgeCount() }}</div>
 
       <el-divider> </el-divider>
 
-      <el-row>
+      <div
+        v-for="(item, i) in getSelectedNodeAttributes()"
+        :key="i"
+        class="chooseform"
+      >
+        <el-row>
+          <el-col :span="12">{{ i }} </el-col>
+          <el-col :span="12">{{ item }} </el-col>
+        </el-row>
+      </div>
+
+      <!-- <el-row>
         <el-col :span="12">
           <div class="informtext">Color nodes select:</div>
           <el-select-v2
@@ -131,7 +142,7 @@
             </el-collapse-item>
           </el-collapse>
         </div>
-      </el-row>
+      </el-row> -->
     </el-tab-pane>
     <el-tab-pane label="Layout" name="Layout">
       <div class="titleText">Layout</div>
@@ -170,42 +181,28 @@ export default defineComponent({
   },
   data() {
     return {
-      activeName: "Edit",
-      value: [],
-      tests: ["Tag1", "Tag2", "Tag3", "Tag4", "Tag5"],
-      options: [
-        { value: "1", label: "Tag1" },
-        { value: "2", label: "Tag2" },
-        { value: "3", label: "Tag3" },
-        { value: "4", label: "Tag4" },
-        { value: "5", label: "Tag5" },
-      ],
-      value2: [],
-      options2: [
-        { value: "1", label: "Default - All edges are gray" },
-        { value: "2", label: "Use original color" },
-        { value: "3", label: "Use the source node color" },
-        { value: "4", label: "Use the target node color" },
-      ],
-      switchColor: {
-        Tag1: false,
-        Tag2: false,
-        Tag3: false,
-        Tag4: false,
-        Tag5: false,
-      },
-      switchSize: {
-        Tag1: false,
-        Tag2: false,
-        Tag3: false,
-        Tag4: false,
-        Tag5: false,
-      },
+      activeName: "Data",
       layoutSelected: ref(),
       layoutToSelect: layoutToSelect,
     };
   },
   methods: {
+    getGraphNodeCount() {
+      return store.state.graphNodeCount;
+    },
+    getGraphEdgeCount() {
+      return store.state.graphEdgeCount;
+    },
+    getSelectedNodeAttributes() {
+      if (store.state.graph && store.state.graphNodeSelected) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        const attrs = store.state.graph.getNodeAttributes(
+          store.state.graphNodeSelected
+        );
+        return attrs;
+      }
+    },
     handleClick(name) {
       // console.log(name);
       // if (name == "Visualize") {
