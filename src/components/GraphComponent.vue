@@ -63,6 +63,8 @@ import { defineComponent } from "vue";
 import store from "@/store";
 import axios from "axios";
 
+import { BACKEND } from "@/config";
+
 export default defineComponent({
   name: "GraphComponent",
   components: {
@@ -90,7 +92,7 @@ export default defineComponent({
       /* *****2022.11.9****** */
       axios({
         method: "GET",
-        url: "http://10.109.92.74:8083/",
+        url: BACKEND + "/graph",
       })
         .then((res) => res.data)
         .then((jsonObj) => {
