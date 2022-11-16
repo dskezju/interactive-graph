@@ -1,6 +1,6 @@
 import Graph from "graphology";
 
-type LayoutMapping = { [key: string]: { x: number; y: number } };
+type LayoutMapping = { [key: string]: { [dimension: string]: number } };
 
 type AnimationSettings = {
   duration?: number;

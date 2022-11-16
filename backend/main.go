@@ -558,9 +558,11 @@ func main() {
 	defer unsafeClose(driver)
 	serveMux := http.NewServeMux()
 	// serveMux.HandleFunc("/", defaultHandler)
-	serveMux.HandleFunc("/", graphHandler(driver, configuration.Database))
-	serveMux.HandleFunc("/node", nodeHandler(driver, configuration.Database))
-	serveMux.HandleFunc("/edge", edgeHandler(driver, configuration.Database))
+
+	serveMux.HandleFunc("/api/graph", graphHandler(driver, configuration.Database))
+	serveMux.HandleFunc("/api/graph/node", nodeHandler(driver, configuration.Database))
+  serveMux.HandleFunc("/api/graph/edge", edgeHandler(driver, configuration.Database))
+
 	fmt.Println(configuration)
 
 	var port string

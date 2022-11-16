@@ -4,6 +4,7 @@ export default createStore({
   state: {
     graphNodeCount: 0,
     graphEdgeCount: 0,
+    graphLayout: "",
   },
   getters: {},
   mutations: {
