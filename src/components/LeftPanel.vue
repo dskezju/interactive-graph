@@ -7,7 +7,7 @@
     style="margin-top: 10px; margin-left: 10px"
   >
     <el-tab-pane label="Edit" name="Edit">
-      <div class="titleText">Knowledge Graph visiualize</div>
+      <div class="titleText">Knowledge Graph Visulization</div>
       <div class="normaltext">
         To change settings in the following part to better illustrate graph
         informatoion.
@@ -52,7 +52,7 @@
         default="Default - All edges are gray"
       />
     </el-tab-pane>
-    <el-tab-pane label="Visiualize" name="Visiualize">
+    <el-tab-pane label="Visualize" name="Visualize">
       <div class="titleText">City Knowledge Graph</div>
       <div class="informtext">Node: {{ $store.state.graphNodeCount }}</div>
       <div class="informtext">Edges: {{ $store.state.graphEdgeCount }}</div>
@@ -133,12 +133,31 @@
         </div>
       </el-row>
     </el-tab-pane>
+    <el-tab-pane label="Layout" name="Layout">
+      <div class="titleText">Layout</div>
+      <div class="informtext">Different layouts to vsualize the graph</div>
+      <el-select-v2
+        v-model="layoutSelected"
+        :options="layoutToSelect"
+        placeholder="Please select"
+        style="width: 240px"
+        width="300px;"
+        @change="handelLayoutChange"
+      />
+    </el-tab-pane>
   </el-tabs>
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, ref } from "vue";
 import store from "@/store";
+
+const layoutToSelect = [
+  { value: "0", label: "original" },
+  { value: "1", label: "circle" },
+  { value: "2", label: "cluster" },
+  { value: "3", label: "force" },
+];
 
 export default defineComponent({
   name: "LeftPanel",
@@ -182,13 +201,21 @@ export default defineComponent({
         Tag4: false,
         Tag5: false,
       },
+      layoutSelected: ref(),
+      layoutToSelect: layoutToSelect,
     };
   },
   methods: {
     handleClick(name) {
       // console.log(name);
-      // if (name == "Visiualize") {
+      // if (name == "Visualize") {
       // }
+    },
+    handelLayoutChange(layoutId) {
+      store.dispatch("set", {
+        key: "graphLayout",
+        value: layoutToSelect[layoutId].label,
+      });
     },
   },
 });

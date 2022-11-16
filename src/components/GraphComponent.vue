@@ -74,6 +74,7 @@ export default defineComponent({
     return {
       graph: new Graph(),
       attributes: [],
+      fa2layout: new FA2Layout(new Graph()),
     };
   },
   created() {
@@ -97,6 +98,7 @@ export default defineComponent({
         .then((res) => res.data)
         .then((jsonObj) => {
           const graph = new Graph();
+          this.graph = graph;
           graph.import(jsonObj);
 
           store.dispatch("set", {
@@ -133,12 +135,6 @@ export default defineComponent({
           });
 
           circular.assign(graph);
-
-          const sensibleSettings = forceAtlas2.inferSettings(graph);
-          const layout = new FA2Layout(graph, {
-            settings: sensibleSettings,
-          });
-          // layout.start();
 
           // Retrieve some useful DOM elements:
           const container = document.getElementById(
@@ -257,24 +253,24 @@ export default defineComponent({
               // // We create the edges
               // closestNodes.forEach((e) => graph.addEdge(id, e.nodeId));
 
-              // layoutAnimate(
-              //   graph,
-              //   circlepack(graph, {
-              //     hierarchyAttributes: ["labels"],
-              //     scale: 0.005,
-              //   })
-              // );
+              layoutAnimate(
+                graph,
+                circlepack(graph, {
+                  hierarchyAttributes: ["labels"],
+                  scale: 0.005,
+                })
+              );
 
               /* Input:  */
-              axios({
-                method: "POST",
-                url: "http://10.107.136.93:8083/",
-                data: {
-                  attributes: {
-                    categoryID: "1",
-                  },
-                },
-              });
+              // axios({
+              //   method: "POST",
+              //   url: BACKEND + "/graph/node",
+              //   data: {
+              //     attributes: {
+              //       categoryID: "1",
+              //     },
+              //   },
+              // });
             }
           );
 
@@ -304,7 +300,10 @@ export default defineComponent({
 
             isDragging?: boolean;
           }
-          const state: State = { searchQuery: "", isDragging: false };
+          const state: State = {
+            searchQuery: "",
+            isDragging: false,
+          };
 
           // Feed the datalist autocomplete values:
           searchSuggestions.innerHTML = graph
@@ -464,8 +463,9 @@ export default defineComponent({
           //  - highlight the node
           //  - disable the camera so its state is not updated
           renderer.on("downNode", (e) => {
-            state.isDragging = true;
-            layout.stop();
+            state.isDragging = false;
+            state.selectedNode = e.node;
+            this.fa2layout.stop();
             draggedNode = e.node;
             graph.setNodeAttribute(draggedNode, "highlighted", true);
           });
@@ -501,11 +501,49 @@ export default defineComponent({
             if (!renderer.getCustomBBox())
               renderer.setCustomBBox(renderer.getBBox());
           });
+
+          renderer.on("clickStage", (e) => {
+            state.selectedNode = undefined;
+          });
         });
+    },
+    handleGraphLayoutChange(layout: string) {
+      if (layout == "circle") {
+        this.fa2layout.kill();
+        layoutAnimate(this.graph, circular(this.graph));
+      } else if (layout == "cluster") {
+        this.fa2layout.kill();
+        layoutAnimate(
+          this.graph,
+          circlepack(this.graph, {
+            hierarchyAttributes: ["labels"],
+            scale: 0.005,
+          })
+        );
+      } else if (layout == "force") {
+        const sensibleSettings = forceAtlas2.inferSettings(this.graph);
+        const fa2layout = new FA2Layout(this.graph, {
+          settings: sensibleSettings,
+        });
+        this.fa2layout = fa2layout;
+        fa2layout.start();
+      }
+      return 0;
     },
   },
   mounted() {
     // console.log(this.name);
+  },
+  computed: {
+    getGraphLayout() {
+      return store.state.graphLayout;
+    },
+  },
+  watch: {
+    getGraphLayout() {
+      this.handleGraphLayoutChange(store.state.graphLayout);
+      return;
+    },
   },
 });
 </script>
