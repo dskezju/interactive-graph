@@ -3,7 +3,6 @@
     type="border-card"
     v-model="activeName"
     class="demo-tabs"
-    @tab-change="handleClick"
     style="margin-top: 10px; margin-left: 10px"
   >
     <!-- <el-tab-pane label="Edit" name="Edit">
@@ -202,11 +201,6 @@ export default defineComponent({
         );
         return attrs;
       }
-    },
-    handleClick(name) {
-      // console.log(name);
-      // if (name == "Visualize") {
-      // }
     },
     handelLayoutChange(layoutId) {
       store.dispatch("set", {

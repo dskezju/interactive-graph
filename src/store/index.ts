@@ -7,6 +7,7 @@ export default createStore({
     graphLayout: "",
     graph: null,
     graphNodeSelected: null,
+    graphRightClickPosition: { x: 0, y: 0 },
   },
   getters: {},
   mutations: {
