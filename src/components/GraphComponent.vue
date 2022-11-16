@@ -13,8 +13,8 @@
           <label for="zoom-out">Zoom out</label><button id="zoom-out">-</button>
         </div>
         <div class="input">
-          <label for="zoom-reset">Reset zoom</label
-          ><button id="zoom-reset">⊙</button>
+          <label for="zoom-reset">Reset zoom</label>
+          <button id="zoom-reset">⊙</button>
         </div>
         <div class="input">
           <label for="labels-threshold">Labels threshold</label>
@@ -35,6 +35,11 @@
           placeholder="Try searching for a node..."
         />
         <datalist id="suggestions"></datalist>
+      </div>
+      <div id="menu">
+        <div>
+          <button id="delete-button" @click="handleDeleteClick">Delete</button>
+        </div>
       </div>
     </el-main>
   </el-container>
@@ -89,6 +94,9 @@ export default defineComponent({
     // console.log(this.attributes);
   },
   methods: {
+    handleDeleteClick() {
+      console.log("Delete");
+    },
     initGraph() {
       /* *****2022.11.9****** */
       axios({
@@ -163,6 +171,17 @@ export default defineComponent({
             },
             renderEdgeLabels: true,
           });
+
+          renderer.on("rightClickNode", ({ node }) => {
+            console.log("Clicked node:", node, graph.getNodeAttributes(node));
+            // show menu
+            const menuNode = document.getElementById("menu") as HTMLElement;
+            menuNode.style.display = "initial";
+            menuNode.style.top = graph.getNodeAttribute(node, "y") + 4 + "px";
+            menuNode.style.left = graph.getNodeAttribute(node, "x") + 4 + "px";
+          });
+
+          var menuNode = document.getElementById("delete-button");
 
           graph.forEachNode((node, attr) => {
             let subtitles: string[] = [];
@@ -487,6 +506,10 @@ export default defineComponent({
             this.fa2layout.stop();
             draggedNode = e.node;
             graph.setNodeAttribute(draggedNode, "highlighted", true);
+            const menuNode = document.getElementById("menu") as HTMLElement;
+            menuNode.style.display = "initial";
+            menuNode.style.top = e.event.original.clientY + "px";
+            menuNode.style.left = e.event.original.clientX + "px";
           });
 
           // On mouse move, if the drag mode is enabled, we change the position of the draggedNode
@@ -629,5 +652,26 @@ body,
   position: absolute;
   right: 1em;
   top: 4em;
+}
+
+#menu {
+  display: none;
+  position: absolute;
+  width: 60px;
+  background-color: white;
+  box-shadow: 0 0 5px grey;
+  border-radius: 3px;
+}
+
+#menu button {
+  width: 100%;
+  background-color: white;
+  border: none;
+  margin: 0;
+  padding: 10px;
+}
+
+#menu button:hover {
+  background-color: lightgray;
 }
 </style>
