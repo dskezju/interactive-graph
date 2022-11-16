@@ -88,6 +88,14 @@ func defaultHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func nodeHandler(driver neo4j.Driver, database string) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	}
+}
+
 func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -221,7 +229,9 @@ func main() {
 	defer unsafeClose(driver)
 	serveMux := http.NewServeMux()
 	// serveMux.HandleFunc("/", defaultHandler)
-	serveMux.HandleFunc("/", graphHandler(driver, configuration.Database))
+	serveMux.HandleFunc("/api/graph", graphHandler(driver, configuration.Database))
+	serveMux.HandleFunc("/api/graph/node", nodeHandler(driver, configuration.Database))
+
 	fmt.Println(configuration)
 
 	var port string
