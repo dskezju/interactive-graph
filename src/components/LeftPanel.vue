@@ -58,21 +58,24 @@
 
       <el-divider> </el-divider>
 
-      <div
-        v-for="(value, key) in getSelectedNodeAttributes()"
-        :key="key"
-        class="chooseform"
-      >
-        <el-row>
-          <el-col :span="12">{{ key }} </el-col>
-          <el-col :span="12">
-            <el-input
-              v-model="attrs[key]"
-              :placeholder="value"
-              clearable
-              size="small"
-          /></el-col>
-        </el-row>
+      <div v-if="getIsGraphNodeSelected()">
+        <div
+          v-for="(value, key) in getSelectedNodeAttributes()"
+          :key="key"
+          class="chooseform"
+        >
+          <el-row>
+            <el-col :span="12">{{ key }} </el-col>
+            <el-col :span="12">
+              <el-input
+                v-model="attrs[key]"
+                :placeholder="value"
+                clearable
+                size="small"
+            /></el-col>
+          </el-row>
+        </div>
+        <el-button type="primary" @click="onSubmit">Update</el-button>
       </div>
 
       <!-- <el-row>
@@ -161,9 +164,6 @@
         @change="handelLayoutChange"
       />
     </el-tab-pane>
-    <el-form-item>
-      <el-button type="primary" @click="onSubmit">Update</el-button>
-    </el-form-item>
   </el-tabs>
 </template>
 
@@ -201,6 +201,9 @@ export default defineComponent({
     },
     getGraphEdgeCount() {
       return store.state.graphEdgeCount;
+    },
+    getIsGraphNodeSelected() {
+      return store.state.graphNodeSelected != null;
     },
     getSelectedNodeAttributes() {
       if (store.state.graph && store.state.graphNodeSelected) {
