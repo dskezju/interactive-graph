@@ -1,6 +1,6 @@
 <template>
   <el-container>
-    <el-aside style="width: 360px; height: 100vh; background-color: #ffffff">
+    <el-aside style="width: 360px; background-color: #ffffff">
       <LeftPanel v-bind:attributes="attributes" />
     </el-aside>
     <el-main style="width: 100%; height: 100%; padding: 0px">
@@ -108,7 +108,7 @@ export default defineComponent({
       /* *****2022.11.9****** */
       axios({
         method: "GET",
-        url: BACKEND + "/graph",
+        url: BACKEND + "/graph/",
       })
         .then((res) => res.data)
         .then((jsonObj) => {

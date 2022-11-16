@@ -52,7 +52,7 @@
       />
     </el-tab-pane> -->
     <el-tab-pane label="Data" name="Data">
-      <div class="titleText">Knowledge Graph Title</div>
+      <div class="titleText">North Wind</div>
       <div class="informtext">Node: {{ getGraphNodeCount() }}</div>
       <div class="informtext">Edges: {{ getGraphEdgeCount() }}</div>
 

@@ -122,8 +122,8 @@ func graphHandler(driver neo4j.Driver, database string) func(http.ResponseWriter
 		limit := 1000000
 		query_nodes := `MATCH (n) RETURN labels(n) as l, ID(n) as id, properties(n) as p `
 		query_edges := `MATCH (sr)-[r]->(er) RETURN ID(r) as rid,  properties(r) as rprops, type(r) as rtype, ID(sr) as srid, ID(er) as erid`
-		fmt.Println(query_nodes)
-		fmt.Println(query_edges)
+		// fmt.Println(query_nodes)
+		// fmt.Println(query_edges)
 		d3Resp, err := session.ReadTransaction(func(tx neo4j.Transaction) (interface{}, error) {
 			records_node, err := tx.Run(query_nodes, map[string]interface{}{"limit": limit})
 			if err != nil {
@@ -559,9 +559,10 @@ func main() {
 	serveMux := http.NewServeMux()
 	// serveMux.HandleFunc("/", defaultHandler)
 
-	serveMux.HandleFunc("/api/graph", graphHandler(driver, configuration.Database))
-	serveMux.HandleFunc("/api/graph/node", nodeHandler(driver, configuration.Database))
-  serveMux.HandleFunc("/api/graph/edge", edgeHandler(driver, configuration.Database))
+	base := "/interactive-graph/api"
+	serveMux.HandleFunc(base+"/graph/", graphHandler(driver, configuration.Database))
+	serveMux.HandleFunc(base+"/graph/node/", nodeHandler(driver, configuration.Database))
+	serveMux.HandleFunc(base+"/graph/edge/", edgeHandler(driver, configuration.Database))
 
 	fmt.Println(configuration)
 
