@@ -643,6 +643,11 @@ export default defineComponent({
       });
       this.graph.dropNode(graphNodeSelected);
 
+      store.dispatch("decrement", {
+        key: "graphNodeCount",
+        value: null,
+      });
+
       if (this.nodeContextMenu) {
         this.nodeContextMenu.style.display = "none";
       }
@@ -664,6 +669,11 @@ export default defineComponent({
 
         const id = 1500;
         this.graph.addNode(id, node);
+
+        store.dispatch("increment", {
+          key: "graphNodeCount",
+          value: null,
+        });
 
         if (this.stageContextMenu) {
           this.stageContextMenu.style.display = "none";

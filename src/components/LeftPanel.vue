@@ -59,13 +59,19 @@
       <el-divider> </el-divider>
 
       <div
-        v-for="(item, i) in getSelectedNodeAttributes()"
-        :key="i"
+        v-for="(value, key) in getSelectedNodeAttributes()"
+        :key="key"
         class="chooseform"
       >
         <el-row>
-          <el-col :span="12">{{ i }} </el-col>
-          <el-col :span="12">{{ item }} </el-col>
+          <el-col :span="12">{{ key }} </el-col>
+          <el-col :span="12">
+            <el-input
+              v-model="attrs[key]"
+              :placeholder="value"
+              clearable
+              size="small"
+          /></el-col>
         </el-row>
       </div>
 
@@ -155,6 +161,9 @@
         @change="handelLayoutChange"
       />
     </el-tab-pane>
+    <el-form-item>
+      <el-button type="primary" @click="onSubmit">Update</el-button>
+    </el-form-item>
   </el-tabs>
 </template>
 
@@ -183,6 +192,7 @@ export default defineComponent({
       activeName: "Data",
       layoutSelected: ref(),
       layoutToSelect: layoutToSelect,
+      attrs: ref(),
     };
   },
   methods: {
@@ -196,10 +206,10 @@ export default defineComponent({
       if (store.state.graph && store.state.graphNodeSelected) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        const attrs = store.state.graph.getNodeAttributes(
+        this.attrs = store.state.graph.getNodeAttributes(
           store.state.graphNodeSelected
         );
-        return attrs;
+        return this.attrs;
       }
     },
     handelLayoutChange(layoutId) {
@@ -207,6 +217,9 @@ export default defineComponent({
         key: "graphLayout",
         value: layoutToSelect[layoutId].label,
       });
+    },
+    onSubmit() {
+      console.log(this.attrs);
     },
   },
 });
