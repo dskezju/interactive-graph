@@ -274,14 +274,6 @@ export default defineComponent({
               // // We create the edges
               // closestNodes.forEach((e) => graph.addEdge(id, e.nodeId));
 
-              layoutAnimate(
-                graph,
-                circlepack(graph, {
-                  hierarchyAttributes: ["labels"],
-                  scale: 0.005,
-                })
-              );
-
               /* Input:  */
               /* add node test */
               // axios({
@@ -539,7 +531,7 @@ export default defineComponent({
           //  - highlight the node
           //  - disable the camera so its state is not updated
           renderer.on("downNode", (e) => {
-            state.isDragging = false;
+            state.isDragging = true;
             state.selectedNode = e.node;
             this.fa2layout.stop();
             draggedNode = e.node;

@@ -26,4 +26,4 @@ pnpm-debug.log*
 *.sw?
 
 /localtest
-/src/const.ts
+/src/config.ts
