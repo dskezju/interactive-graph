@@ -637,20 +637,32 @@ export default defineComponent({
     },
     handleNodeDeleteClick() {
       const graphNodeSelected = store.state.graphNodeSelected;
-      store.dispatch("set", {
-        key: "graphNodeSelected",
-        value: null,
-      });
-      this.graph.dropNode(graphNodeSelected);
-
-      store.dispatch("decrement", {
-        key: "graphNodeCount",
-        value: null,
-      });
-
       if (this.nodeContextMenu) {
         this.nodeContextMenu.style.display = "none";
       }
+
+      axios({
+        method: "POST",
+        url: BACKEND + "/graph/node/",
+        data: {
+          method: "delete",
+          payload: {
+            key: graphNodeSelected,
+          },
+        },
+      }).then(() => {
+        /// backend responds with success
+        store.dispatch("set", {
+          key: "graphNodeSelected",
+          value: null,
+        });
+        this.graph.dropNode(graphNodeSelected);
+
+        store.dispatch("decrement", {
+          key: "graphNodeCount",
+          value: null,
+        });
+      });
     },
     handleNodeAddClick() {
       // Sigma (ie. graph) and screen (viewport) coordinates are not the same.
