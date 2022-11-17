@@ -317,10 +317,8 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 			record := result.Record()
 			if id, findit := record.Get("nodeID"); findit {
 				if data, ok := id.(int64); ok {
-					message.WriteString("ADD NODE: {key: ")
 					strData := strconv.FormatInt(data, 10)
 					message.WriteString(strData)
-					message.WriteString("}")
 				}
 			}
 

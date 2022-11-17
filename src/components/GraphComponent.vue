@@ -77,6 +77,18 @@ import axios from "axios";
 
 import { BACKEND } from "@/config";
 
+function colorize(str: string) {
+  for (
+    var i = 0, hash = 0;
+    i < str.length;
+    hash = str.charCodeAt(i++) + ((hash << 5) - hash)
+  );
+  let color = Math.floor(
+    Math.abs(((Math.sin(hash) * 10000) % 1) * 16777216)
+  ).toString(16);
+  return "#" + Array(6 - color.length + 1).join("0") + color;
+}
+
 export default defineComponent({
   name: "GraphComponent",
   components: {
@@ -130,18 +142,6 @@ export default defineComponent({
             key: "graphEdgeCount",
             value: graph.edges().length,
           });
-
-          function colorize(str: string) {
-            for (
-              var i = 0, hash = 0;
-              i < str.length;
-              hash = str.charCodeAt(i++) + ((hash << 5) - hash)
-            );
-            let color = Math.floor(
-              Math.abs(((Math.sin(hash) * 10000) % 1) * 16777216)
-            ).toString(16);
-            return "#" + Array(6 - color.length + 1).join("0") + color;
-          }
 
           graph.forEachNode((node, attr) => {
             attr.color = chroma(colorize(attr["labels"][0])).hex();
@@ -337,18 +337,17 @@ export default defineComponent({
             //     },
             //   },
             // });
-
             /* delete relation by key test */
-            axios({
-              method: "POST",
-              url: "http://localhost:8083/graph/edge/",
-              data: {
-                method: "delete",
-                payload: {
-                  key: 3100,
-                },
-              },
-            });
+            // axios({
+            //   method: "POST",
+            //   url: "http://localhost:8083/graph/edge/",
+            //   data: {
+            //     method: "delete",
+            //     payload: {
+            //       key: 3100,
+            //     },
+            //   },
+            // });
           });
 
           //
@@ -687,7 +686,7 @@ export default defineComponent({
         const node = {
           ...coordForGraph,
           size: 4,
-          color: chroma.random().hex(),
+          color: chroma(colorize("new")).hex(),
           label: "new",
         };
 
@@ -703,16 +702,15 @@ export default defineComponent({
             },
           },
         }).then((rsp) => {
-          console.log(rsp);
+          if (rsp.data.success) {
+            const id = rsp.data.message as number;
+            this.graph.addNode(id, node);
+          }
+          store.dispatch("increment", {
+            key: "graphNodeCount",
+            value: null,
+          });
         });
-
-        // const id = 1047;
-        // this.graph.addNode(id, node);
-
-        // store.dispatch("increment", {
-        //   key: "graphNodeCount",
-        //   value: null,
-        // });
 
         if (this.stageContextMenu) {
           this.stageContextMenu.style.display = "none";
