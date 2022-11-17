@@ -248,6 +248,7 @@ func nodeHandler(driver neo4j.Driver, database string) func(http.ResponseWriter,
 			// fmt.Println(buf)
 			var nReq NodeRequest
 			json.NewDecoder(strings.NewReader(string(buf))).Decode(&nReq)
+			fmt.Println(nReq)
 			session := driver.NewSession(neo4j.SessionConfig{
 				AccessMode:   neo4j.AccessModeRead,
 				DatabaseName: database,
@@ -269,6 +270,7 @@ func nodeHandler(driver neo4j.Driver, database string) func(http.ResponseWriter,
 func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, newnode Node) {
 	NODE_LABEL := "labels"
 
+	fmt.Println("add node ", newnode)
 	var buffer bytes.Buffer
 	buffer.WriteString("CREATE (n")
 	for key, val := range newnode.Properties {
@@ -334,7 +336,7 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 func deleteNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, newnode Node) {
 	nodeID := newnode.Identity
 	addNodeCypher := `MATCH (n) WHERE ID(n) = $nodeID DETACH DELETE (n)`
-	fmt.Println(addNodeCypher)
+	fmt.Println(addNodeCypher, nodeID)
 	addNodeResp, err := session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
 		result, err := tx.Run(addNodeCypher, map[string]interface{}{
 			"nodeID": nodeID,

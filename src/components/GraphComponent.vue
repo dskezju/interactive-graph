@@ -71,9 +71,12 @@ import { layoutAnimate } from "@/lib/layoutAnimation";
 import { drawHover } from "@/utils/canvas";
 import LeftPanel from "@/components/LeftPanel.vue";
 import { defineComponent, ref } from "vue";
+
 import store from "@/store";
 import axios from "axios";
+
 import { BACKEND } from "@/config";
+
 export default defineComponent({
   name: "GraphComponent",
   components: {
@@ -115,15 +118,19 @@ export default defineComponent({
             key: "graph",
             value: graph,
           });
+
           graph.import(jsonObj);
+
           store.dispatch("set", {
             key: "graphNodeCount",
             value: graph.nodes().length,
           });
+
           store.dispatch("set", {
             key: "graphEdgeCount",
             value: graph.edges().length,
           });
+
           function colorize(str: string) {
             for (
               var i = 0, hash = 0;
@@ -135,6 +142,7 @@ export default defineComponent({
             ).toString(16);
             return "#" + Array(6 - color.length + 1).join("0") + color;
           }
+
           graph.forEachNode((node, attr) => {
             attr.color = chroma(colorize(attr["labels"][0])).hex();
             attr.label =
@@ -145,7 +153,9 @@ export default defineComponent({
             attr.size = attr["reorderLevel"] / 5;
             return attr;
           });
+
           circular.assign(graph);
+
           // Retrieve some useful DOM elements:
           const container = document.getElementById(
             "sigma-container"
@@ -162,6 +172,7 @@ export default defineComponent({
           const labelsThresholdRange = document.getElementById(
             "labels-threshold"
           ) as HTMLInputElement;
+
           // Instanciate sigma:
           const renderer = new Sigma(graph, container, {
             minCameraRatio: 0.001,
@@ -173,9 +184,11 @@ export default defineComponent({
             renderEdgeLabels: true,
           });
           this.renderer = renderer;
+
           renderer.on("rightClickNode", (e) => {
             this.handleNodeRightClick(e.event);
           });
+
           graph.forEachNode((node, attr) => {
             let subtitles: string[] = [];
             for (const [key, value] of Object.entries(attr)) {
@@ -188,6 +201,7 @@ export default defineComponent({
             attr.subtitles = subtitles;
             return attr;
           });
+
           renderer.setSetting("hoverRenderer", (context, data, settings) =>
             drawHover(
               context,
@@ -195,7 +209,9 @@ export default defineComponent({
               settings
             )
           );
+
           const camera = renderer.getCamera();
+
           // Bind zoom manipulation buttons
           zoomInBtn.addEventListener("click", () => {
             camera.animatedZoom({ duration: 600 });
@@ -206,6 +222,7 @@ export default defineComponent({
           zoomResetBtn.addEventListener("click", () => {
             camera.animatedReset({ duration: 600 });
           });
+
           // Bind labels threshold to range input
           labelsThresholdRange.addEventListener("input", () => {
             renderer.setSetting(
@@ -213,16 +230,20 @@ export default defineComponent({
               +labelsThresholdRange.value
             );
           });
+
           // Set proper range initial value:
           labelsThresholdRange.value =
             renderer.getSetting("labelRenderedSizeThreshold") + "";
+
           //
           // Create node (and edge) by click
           // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
           //
+
           renderer.on("clickStage", () => {
             this.handleStageClick();
           });
+
           // When clicking on the stage, we add a new node and connect it to the closest node
           renderer.on("rightClickStage", () => {
             // // Sigma (ie. graph) and screen (viewport) coordinates are not the same.
@@ -317,31 +338,38 @@ export default defineComponent({
             //   },
             // });
           });
+
           //
           // highlight and search
           // ~~~~~~~~~~~~~~~~~~~~
           //
+
           const searchInput = document.getElementById(
             "search-input"
           ) as HTMLInputElement;
           const searchSuggestions = document.getElementById(
             "suggestions"
           ) as HTMLDataListElement;
+
           // Type and declare internal state:
           interface State {
             hoveredNode?: string;
             searchQuery: string;
+
             // State derived from query:
             selectedNode?: string;
             suggestions?: Set<string>;
+
             // State derived from hovered node:
             hoveredNeighbors?: Set<string>;
+
             isDragging?: boolean;
           }
           const state: State = {
             searchQuery: "",
             isDragging: false,
           };
+
           // Feed the datalist autocomplete values:
           searchSuggestions.innerHTML = graph
             .nodes()
@@ -353,10 +381,13 @@ export default defineComponent({
                 )}"></option>`
             )
             .join("\n");
+
           // Actions:
           function setSearchQuery(query: string) {
             state.searchQuery = query;
+
             if (searchInput.value !== query) searchInput.value = query;
+
             if (query) {
               const lcQuery = query.toLowerCase();
               const suggestions = graph
@@ -366,12 +397,14 @@ export default defineComponent({
                   label: graph.getNodeAttribute(n, "label") as string,
                 }))
                 .filter(({ label }) => label.toLowerCase().includes(lcQuery));
+
               // If we have a single perfect match, them we remove the suggestions, and
               // we consider the user has selected a node through the datalist
               // autocomplete:
               if (suggestions.length === 1 && suggestions[0].label === query) {
                 state.selectedNode = suggestions[0].id;
                 state.suggestions = undefined;
+
                 // Move the camera to center it on the selected node:
                 const nodePosition = renderer.getNodeDisplayData(
                   state.selectedNode
@@ -391,6 +424,7 @@ export default defineComponent({
               state.selectedNode = undefined;
               state.suggestions = undefined;
             }
+
             // Refresh rendering:
             renderer.refresh();
           }
@@ -402,9 +436,11 @@ export default defineComponent({
               state.hoveredNode = undefined;
               state.hoveredNeighbors = undefined;
             }
+
             // Refresh rendering:
             renderer.refresh();
           }
+
           // Bind search input interactions:
           searchInput.addEventListener("input", () => {
             setSearchQuery(searchInput.value || "");
@@ -412,6 +448,7 @@ export default defineComponent({
           searchInput.addEventListener("blur", () => {
             setSearchQuery("");
           });
+
           // Bind graph interactions:
           renderer.on("enterNode", ({ node }) => {
             if (!state.isDragging) {
@@ -423,12 +460,14 @@ export default defineComponent({
               setHoveredNode(undefined);
             }
           });
+
           // Render nodes accordingly to the internal state:
           // 1. If a node is selected, it is highlighted
           // 2. If there is query, all non-matching nodes are greyed
           // 3. If there is a hovered node, all non-neighbor nodes are greyed
           renderer.setSetting("nodeReducer", (node, data) => {
             const res: Partial<NodeDisplayData> = { ...data };
+
             if (
               state.hoveredNeighbors &&
               !state.hoveredNeighbors.has(node) &&
@@ -437,14 +476,17 @@ export default defineComponent({
               res.label = "";
               res.color = "#f6f6f6";
             }
+
             if (state.selectedNode === node) {
               res.highlighted = true;
             } else if (state.suggestions && !state.suggestions.has(node)) {
               res.label = "";
               res.color = "#f6f6f6";
             }
+
             return res;
           });
+
           // Render edges accordingly to the internal state:
           // 1. If a node is hovered, the edge is hidden if it is not connected to the
           //    node
@@ -452,12 +494,14 @@ export default defineComponent({
           //    suggestions
           renderer.setSetting("edgeReducer", (edge, data) => {
             const res: Partial<EdgeDisplayData> = { ...data };
+
             if (
               state.hoveredNode &&
               !graph.hasExtremity(edge, state.hoveredNode)
             ) {
               res.hidden = true;
             }
+
             if (
               state.suggestions &&
               (!state.suggestions.has(graph.source(edge)) ||
@@ -465,15 +509,19 @@ export default defineComponent({
             ) {
               res.hidden = true;
             }
+
             return res;
           });
+
           //
           // Drag'n'drop feature
           // ~~~~~~~~~~~~~~~~~~~
           //
+
           // State for drag'n'drop
           let draggedNode: string | null = null;
           state.isDragging = false;
+
           // On mouse down on a node
           //  - we enable the drag mode
           //  - save in the dragged node in the state
@@ -490,18 +538,23 @@ export default defineComponent({
             draggedNode = e.node;
             graph.setNodeAttribute(draggedNode, "highlighted", true);
           });
+
           // On mouse move, if the drag mode is enabled, we change the position of the draggedNode
           renderer.getMouseCaptor().on("mousemovebody", (e) => {
             if (!state.isDragging || !draggedNode) return;
+
             // Get new position of node
             const pos = renderer.viewportToGraph(e);
+
             graph.setNodeAttribute(draggedNode, "x", pos.x);
             graph.setNodeAttribute(draggedNode, "y", pos.y);
+
             // Prevent sigma to move camera:
             e.preventSigmaDefault();
             e.original.preventDefault();
             e.original.stopPropagation();
           });
+
           // On mouse up, we reset the autoscale and the dragging mode
           renderer.getMouseCaptor().on("mouseup", () => {
             if (draggedNode) {
@@ -511,11 +564,13 @@ export default defineComponent({
             // layout.start();
             draggedNode = null;
           });
+
           // Disable the autoscale at the first down interaction
           renderer.getMouseCaptor().on("mousedown", () => {
             if (!renderer.getCustomBBox())
               renderer.setCustomBBox(renderer.getBBox());
           });
+
           renderer.on("clickStage", () => {
             state.selectedNode = undefined;
             store.dispatch("set", {
@@ -523,6 +578,7 @@ export default defineComponent({
               value: null,
             });
           });
+
           renderer.on("rightClickStage", (e) => {
             this.handleStageRightClick(e.event);
           });
@@ -581,14 +637,32 @@ export default defineComponent({
     },
     handleNodeDeleteClick() {
       const graphNodeSelected = store.state.graphNodeSelected;
-      store.dispatch("set", {
-        key: "graphNodeSelected",
-        value: null,
-      });
-      this.graph.dropNode(graphNodeSelected);
       if (this.nodeContextMenu) {
         this.nodeContextMenu.style.display = "none";
       }
+
+      axios({
+        method: "POST",
+        url: BACKEND + "/graph/node/",
+        data: {
+          method: "delete",
+          payload: {
+            key: +graphNodeSelected,
+          },
+        },
+      }).then(() => {
+        /// backend responds with success
+        store.dispatch("set", {
+          key: "graphNodeSelected",
+          value: null,
+        });
+        this.graph.dropNode(graphNodeSelected);
+
+        store.dispatch("decrement", {
+          key: "graphNodeCount",
+          value: null,
+        });
+      });
     },
     handleNodeAddClick() {
       // Sigma (ie. graph) and screen (viewport) coordinates are not the same.
@@ -597,14 +671,37 @@ export default defineComponent({
         const coordForGraph = this.renderer.viewportToGraph(
           store.state.graphRightClickPosition
         );
+
         const node = {
           ...coordForGraph,
           size: 4,
           color: chroma.random().hex(),
-          label: "test",
+          label: "new",
         };
-        const id = 1500;
-        this.graph.addNode(id, node);
+
+        axios({
+          method: "POST",
+          url: BACKEND + "/graph/node/",
+          data: {
+            method: "add",
+            payload: {
+              attributes: {
+                labels: "new",
+              },
+            },
+          },
+        }).then((rsp) => {
+          console.log(rsp);
+        });
+
+        // const id = 1047;
+        // this.graph.addNode(id, node);
+
+        // store.dispatch("increment", {
+        //   key: "graphNodeCount",
+        //   value: null,
+        // });
+
         if (this.stageContextMenu) {
           this.stageContextMenu.style.display = "none";
         }
@@ -635,6 +732,7 @@ export default defineComponent({
 body {
   font-family: sans-serif;
 }
+
 html,
 body,
 #sigma-container {
@@ -644,20 +742,24 @@ body,
   padding: 0;
   overflow: hidden;
 }
+
 #controls {
   position: absolute;
   right: 1em;
   top: 1em;
   text-align: right;
 }
+
 .input {
   position: relative;
   display: inline-block;
   vertical-align: middle;
 }
+
 .input:not(:hover) label {
   display: none;
 }
+
 .input label {
   position: absolute;
   top: 100%;
@@ -671,6 +773,7 @@ body,
   font-size: 0.8em;
   white-space: nowrap;
 }
+
 .input button {
   width: 2.5em;
   height: 2.5em;
@@ -682,11 +785,13 @@ body,
   border-radius: 2px;
   cursor: pointer;
 }
+
 #search {
   position: absolute;
   right: 1em;
   top: 4em;
 }
+
 .contextMenu {
   display: none;
   position: absolute;
@@ -695,6 +800,7 @@ body,
   box-shadow: 0 0 5px grey;
   border-radius: 3px;
 }
+
 .contextMenu button {
   width: 100%;
   background-color: white;
@@ -703,6 +809,7 @@ body,
   padding: 10px;
   text-align: left;
 }
+
 .contextMenu button:hover {
   background-color: lightgray;
 }
