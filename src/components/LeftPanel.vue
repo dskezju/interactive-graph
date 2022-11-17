@@ -3,11 +3,10 @@
     type="border-card"
     v-model="activeName"
     class="demo-tabs"
-    @tab-change="handleClick"
     style="margin-top: 10px; margin-left: 10px"
   >
-    <el-tab-pane label="Edit" name="Edit">
-      <div class="titleText">Knowledge Graph visiualize</div>
+    <!-- <el-tab-pane label="Edit" name="Edit">
+      <div class="titleText">Knowledge Graph Visulization</div>
       <div class="normaltext">
         To change settings in the following part to better illustrate graph
         informatoion.
@@ -51,15 +50,35 @@
         placeholder="Please select"
         default="Default - All edges are gray"
       />
-    </el-tab-pane>
-    <el-tab-pane label="Visiualize" name="Visiualize">
-      <div class="titleText">City Knowledge Graph</div>
-      <div class="informtext">Node: {{ $store.state.graphNodeCount }}</div>
-      <div class="informtext">Edges: {{ $store.state.graphEdgeCount }}</div>
+    </el-tab-pane> -->
+    <el-tab-pane label="Data" name="Data">
+      <div class="titleText">North Wind</div>
+      <div class="informtext">Node: {{ getGraphNodeCount() }}</div>
+      <div class="informtext">Edges: {{ getGraphEdgeCount() }}</div>
 
       <el-divider> </el-divider>
 
-      <el-row>
+      <div v-if="getIsGraphNodeSelected()">
+        <div
+          v-for="(value, key) in getSelectedNodeAttributes()"
+          :key="key"
+          class="chooseform"
+        >
+          <el-row>
+            <el-col :span="12">{{ key }} </el-col>
+            <el-col :span="12">
+              <el-input
+                v-model="attrs[key]"
+                :placeholder="value"
+                clearable
+                size="small"
+            /></el-col>
+          </el-row>
+        </div>
+        <el-button type="primary" @click="onSubmit">Update</el-button>
+      </div>
+
+      <!-- <el-row>
         <el-col :span="12">
           <div class="informtext">Color nodes select:</div>
           <el-select-v2
@@ -131,14 +150,33 @@
             </el-collapse-item>
           </el-collapse>
         </div>
-      </el-row>
+      </el-row> -->
+    </el-tab-pane>
+    <el-tab-pane label="Layout" name="Layout">
+      <div class="titleText">Layout</div>
+      <div class="informtext">Different layouts to vsualize the graph</div>
+      <el-select-v2
+        v-model="layoutSelected"
+        :options="layoutToSelect"
+        placeholder="Please select"
+        style="width: 240px"
+        width="300px;"
+        @change="handelLayoutChange"
+      />
     </el-tab-pane>
   </el-tabs>
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, ref } from "vue";
 import store from "@/store";
+
+const layoutToSelect = [
+  { value: "0", label: "original" },
+  { value: "1", label: "circle" },
+  { value: "2", label: "cluster" },
+  { value: "3", label: "force" },
+];
 
 export default defineComponent({
   name: "LeftPanel",
@@ -151,44 +189,40 @@ export default defineComponent({
   },
   data() {
     return {
-      activeName: "Edit",
-      value: [],
-      tests: ["Tag1", "Tag2", "Tag3", "Tag4", "Tag5"],
-      options: [
-        { value: "1", label: "Tag1" },
-        { value: "2", label: "Tag2" },
-        { value: "3", label: "Tag3" },
-        { value: "4", label: "Tag4" },
-        { value: "5", label: "Tag5" },
-      ],
-      value2: [],
-      options2: [
-        { value: "1", label: "Default - All edges are gray" },
-        { value: "2", label: "Use original color" },
-        { value: "3", label: "Use the source node color" },
-        { value: "4", label: "Use the target node color" },
-      ],
-      switchColor: {
-        Tag1: false,
-        Tag2: false,
-        Tag3: false,
-        Tag4: false,
-        Tag5: false,
-      },
-      switchSize: {
-        Tag1: false,
-        Tag2: false,
-        Tag3: false,
-        Tag4: false,
-        Tag5: false,
-      },
+      activeName: "Data",
+      layoutSelected: ref(),
+      layoutToSelect: layoutToSelect,
+      attrs: ref(),
     };
   },
   methods: {
-    handleClick(name) {
-      // console.log(name);
-      // if (name == "Visiualize") {
-      // }
+    getGraphNodeCount() {
+      return store.state.graphNodeCount;
+    },
+    getGraphEdgeCount() {
+      return store.state.graphEdgeCount;
+    },
+    getIsGraphNodeSelected() {
+      return store.state.graphNodeSelected != null;
+    },
+    getSelectedNodeAttributes() {
+      if (store.state.graph && store.state.graphNodeSelected) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        this.attrs = store.state.graph.getNodeAttributes(
+          store.state.graphNodeSelected
+        );
+        return this.attrs;
+      }
+    },
+    handelLayoutChange(layoutId) {
+      store.dispatch("set", {
+        key: "graphLayout",
+        value: layoutToSelect[layoutId].label,
+      });
+    },
+    onSubmit() {
+      console.log(this.attrs);
     },
   },
 });

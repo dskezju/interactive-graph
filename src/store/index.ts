@@ -4,6 +4,10 @@ export default createStore({
   state: {
     graphNodeCount: 0,
     graphEdgeCount: 0,
+    graphLayout: "",
+    graph: null,
+    graphNodeSelected: null,
+    graphRightClickPosition: { x: 0, y: 0 },
   },
   getters: {},
   mutations: {

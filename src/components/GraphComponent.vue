@@ -1,6 +1,6 @@
 <template>
   <el-container>
-    <el-aside style="width: 360px; height: 100vh; background-color: #ffffff">
+    <el-aside style="width: 360px; background-color: #ffffff">
       <LeftPanel v-bind:attributes="attributes" />
     </el-aside>
     <el-main style="width: 100%; height: 100%; padding: 0px">
@@ -13,8 +13,8 @@
           <label for="zoom-out">Zoom out</label><button id="zoom-out">-</button>
         </div>
         <div class="input">
-          <label for="zoom-reset">Reset zoom</label
-          ><button id="zoom-reset">⊙</button>
+          <label for="zoom-reset">Reset zoom</label>
+          <button id="zoom-reset">⊙</button>
         </div>
         <div class="input">
           <label for="labels-threshold">Labels threshold</label>
@@ -36,6 +36,22 @@
         />
         <datalist id="suggestions"></datalist>
       </div>
+      <div id="nodeContextMenu" class="contextMenu">
+        <div>
+          <button id="nodeDelete" @click="handleNodeDeleteClick">delete</button>
+        </div>
+      </div>
+      <div id="edgeContextMenu" class="contextMenu">
+        <div>
+          <button id="edgeDelete" @click="handleNodeDeleteClick">delete</button>
+        </div>
+      </div>
+      <div id="stageContextMenu" class="contextMenu">
+        <div>
+          <button id="nodeAdd" @click="handleNodeAddClick">add node</button>
+          <button id="edgeAdd" @click="handleEdgeAddClick">add edge</button>
+        </div>
+      </div>
     </el-main>
   </el-container>
 </template>
@@ -43,10 +59,7 @@
 <script lang="ts">
 import Sigma from "sigma";
 import Graph, { MultiGraph } from "graphology";
-import { parse } from "graphology-gexf/browser";
-import { Vue } from "vue-class-component";
 import chroma from "chroma-js";
-import { v4 as uuid } from "uuid";
 import NodeProgramFull from "./webgl/programs/node.full";
 import getNodeProgramImage from "sigma/rendering/webgl/programs/node.image";
 import FA2Layout from "graphology-layout-forceatlas2/worker";
@@ -56,12 +69,13 @@ import circlepack from "graphology-layout/circlepack";
 import circular from "graphology-layout/circular";
 import { layoutAnimate } from "@/lib/layoutAnimation";
 import { drawHover } from "@/utils/canvas";
-import { isNil } from "lodash";
 import LeftPanel from "@/components/LeftPanel.vue";
-import { defineComponent } from "vue";
+import { defineComponent, ref } from "vue";
 
 import store from "@/store";
 import axios from "axios";
+
+import { BACKEND } from "@/config";
 
 export default defineComponent({
   name: "GraphComponent",
@@ -72,29 +86,39 @@ export default defineComponent({
     return {
       graph: new Graph(),
       attributes: [],
+      fa2layout: new FA2Layout(new Graph()),
+      stageContextMenu: ref<HTMLElement>(),
+      nodeContextMenu: ref<HTMLElement>(),
+      renderer: ref<Sigma>(),
     };
   },
   created() {
     this.initGraph();
-    // console.log("Finish")
-    // this.graph.nodes().forEach((node, i) => {
-    //   console.log(node, i);
-    //   console.log(this.graph.getNodeAttributes(node));
-    //   this.attributes.push(this.graph.getNodeAttributes(node));
-    // });
-    // console.log("Attr:");
-    // console.log(this.attributes);
+  },
+  mounted() {
+    this.stageContextMenu = document.getElementById(
+      "stageContextMenu"
+    ) as HTMLElement;
+    this.nodeContextMenu = document.getElementById(
+      "nodeContextMenu"
+    ) as HTMLElement;
   },
   methods: {
     initGraph() {
       /* *****2022.11.9****** */
       axios({
         method: "GET",
-        url: "http://localhost:8083/",
+        url: BACKEND + "/graph/",
       })
         .then((res) => res.data)
         .then((jsonObj) => {
           const graph = new MultiGraph();
+          this.graph = graph;
+          store.dispatch("set", {
+            key: "graph",
+            value: graph,
+          });
+
           graph.import(jsonObj);
 
           store.dispatch("set", {
@@ -132,12 +156,6 @@ export default defineComponent({
 
           circular.assign(graph);
 
-          const sensibleSettings = forceAtlas2.inferSettings(graph);
-          const layout = new FA2Layout(graph, {
-            settings: sensibleSettings,
-          });
-          // layout.start();
-
           // Retrieve some useful DOM elements:
           const container = document.getElementById(
             "sigma-container"
@@ -164,6 +182,11 @@ export default defineComponent({
               circle: NodeProgramFull,
             },
             renderEdgeLabels: true,
+          });
+          this.renderer = renderer;
+
+          renderer.on("rightClickNode", (e) => {
+            this.handleNodeRightClick(e.event);
           });
 
           graph.forEachNode((node, attr) => {
@@ -217,119 +240,104 @@ export default defineComponent({
           // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
           //
 
+          renderer.on("clickStage", () => {
+            this.handleStageClick();
+          });
+
           // When clicking on the stage, we add a new node and connect it to the closest node
-          renderer.on(
-            "clickStage",
-            ({ event }: { event: { x: number; y: number } }) => {
-              // // Sigma (ie. graph) and screen (viewport) coordinates are not the same.
-              // // So we need to translate the screen x & y coordinates to the graph one by calling the sigma helper `viewportToGraph`
-              // const coordForGraph = renderer.viewportToGraph({
-              //   x: event.x,
-              //   y: event.y,
-              // });
-
-              // // We create a new node
-              // const node = {
-              //   ...coordForGraph,
-              //   size: 4,
-              //   color: chroma.random().hex(),
-              //   // type: "border",
-              // };
-
-              // // Searching the two closest nodes to auto-create an edge to it
-              // const closestNodes = graph
-              //   .nodes()
-              //   .map((nodeId) => {
-              //     const attrs = graph.getNodeAttributes(nodeId);
-              //     const distance =
-              //       Math.pow(node.x - attrs.x, 2) + Math.pow(node.y - attrs.y, 2);
-              //     return { nodeId, distance };
-              //   })
-              //   .sort((a, b) => a.distance - b.distance)
-              //   .slice(0, 2);
-
-              // // We register the new node into graphology instance
-              // const id = uuid();
-              // graph.addNode(id, node);
-
-              // // We create the edges
-              // closestNodes.forEach((e) => graph.addEdge(id, e.nodeId));
-
-              // layoutAnimate(
-              //   graph,
-              //   circlepack(graph, {
-              //     hierarchyAttributes: ["labels"],
-              //     scale: 0.005,
-              //   })
-              // );
-
-              /* Input:  */
-              /* add node test */
-              // axios({
-              //   method: "POST",
-              //   url: "http://localhost:8083/node",
-              //   data: {
-              //     method: "add",
-              //     payload: {
-              //       // key: 1,
-              //       attributes: {
-              //         labels: "Label_test",
-              //         attribute1: "attribute1",
-              //         attribute2: "attribute2",
-              //         attribute3: "attribute3",
-              //       },
-              //     },
-              //   },
-              // });
-
-              /* delete node and its relationships by key test */
-              axios({
-                method: "POST",
-                url: "http://localhost:8083/node",
-                data: {
-                  method: "delete",
-                  payload: {
-                    key: 1047,
-                  },
-                },
-              });
-
-              /* update node by key test */
-              // axios({
-              //   method: "POST",
-              //   url: "http://localhost:8083/node",
-              //   data: {
-              //     method: "update",
-              //     payload: {
-              //       key: 1045,
-              //       attributes: {
-              //         labels: "Label_update",
-              //         attribute1: "attribute1_update",
-              //         attribute2: "attribute2",
-              //         // attribute3: "attribute3",
-              //       },
-              //     },
-              //   },
-              // });
-
-              /* add relation test */
-              // axios({
-              //   method: "POST",
-              //   url: "http://localhost:8083/edge",
-              //   data: {
-              //     method: "add",
-              //     payload: {
-              //       source: 1048,
-              //       target: 1049,
-              //       attributes: {
-              //         type: "TYPE_TEST",
-              //         attribute1: "attribute1",
-              //       },
-              //     },
-              //   },
-              // });
-            }
-          );
+          renderer.on("rightClickStage", () => {
+            // // Sigma (ie. graph) and screen (viewport) coordinates are not the same.
+            // // So we need to translate the screen x & y coordinates to the graph one by calling the sigma helper `viewportToGraph`
+            // const coordForGraph = renderer.viewportToGraph({
+            //   x: event.x,
+            //   y: event.y,
+            // });
+            // // We create a new node
+            // const node = {
+            //   ...coordForGraph,
+            //   size: 4,
+            //   color: chroma.random().hex(),
+            //   // type: "border",
+            // };
+            // // Searching the two closest nodes to auto-create an edge to it
+            // const closestNodes = graph
+            //   .nodes()
+            //   .map((nodeId) => {
+            //     const attrs = graph.getNodeAttributes(nodeId);
+            //     const distance =
+            //       Math.pow(node.x - attrs.x, 2) + Math.pow(node.y - attrs.y, 2);
+            //     return { nodeId, distance };
+            //   })
+            //   .sort((a, b) => a.distance - b.distance)
+            //   .slice(0, 2);
+            // // We register the new node into graphology instance
+            // const id = uuid();
+            // graph.addNode(id, node);
+            // // We create the edges
+            // closestNodes.forEach((e) => graph.addEdge(id, e.nodeId));
+            /* Input:  */
+            /* add node test */
+            // axios({
+            //   method: "POST",
+            //   url: "http://localhost:8083/node",
+            //   data: {
+            //     method: "add",
+            //     payload: {
+            //       // key: 1,
+            //       attributes: {
+            //         labels: "Label_test",
+            //         attribute1: "attribute1",
+            //         attribute2: "attribute2",
+            //         attribute3: "attribute3",
+            //       },
+            //     },
+            //   },
+            // });
+            /* delete node and its relationships by key test */
+            // axios({
+            //   method: "POST",
+            //   url: "http://localhost:8083/node",
+            //   data: {
+            //     method: "delete",
+            //     payload: {
+            //       key: 1046,
+            //     },
+            //   },
+            // });
+            /* update node by key test */
+            // axios({
+            //   method: "POST",
+            //   url: "http://localhost:8083/node",
+            //   data: {
+            //     method: "update",
+            //     payload: {
+            //       key: 1045,
+            //       attributes: {
+            //         labels: "Label_update",
+            //         attribute1: "attribute1_update",
+            //         attribute2: "attribute2",
+            //         // attribute3: "attribute3",
+            //       },
+            //     },
+            //   },
+            // });
+            /* add relation test */
+            // axios({
+            //   method: "POST",
+            //   url: "http://localhost:8083/edge",
+            //   data: {
+            //     method: "add",
+            //     payload: {
+            //       source: 1048,
+            //       target: 1049,
+            //       attributes: {
+            //         type: "TYPE_TEST",
+            //         attribute1: "attribute1",
+            //       },
+            //     },
+            //   },
+            // });
+          });
 
           //
           // highlight and search
@@ -357,7 +365,10 @@ export default defineComponent({
 
             isDragging?: boolean;
           }
-          const state: State = { searchQuery: "", isDragging: false };
+          const state: State = {
+            searchQuery: "",
+            isDragging: false,
+          };
 
           // Feed the datalist autocomplete values:
           searchSuggestions.innerHTML = graph
@@ -518,7 +529,12 @@ export default defineComponent({
           //  - disable the camera so its state is not updated
           renderer.on("downNode", (e) => {
             state.isDragging = true;
-            layout.stop();
+            state.selectedNode = e.node;
+            store.dispatch("set", {
+              key: "graphNodeSelected",
+              value: e.node,
+            });
+            this.fa2layout.stop();
             draggedNode = e.node;
             graph.setNodeAttribute(draggedNode, "highlighted", true);
           });
@@ -554,11 +570,133 @@ export default defineComponent({
             if (!renderer.getCustomBBox())
               renderer.setCustomBBox(renderer.getBBox());
           });
+
+          renderer.on("clickStage", () => {
+            state.selectedNode = undefined;
+            store.dispatch("set", {
+              key: "graphNodeSelected",
+              value: null,
+            });
+          });
+
+          renderer.on("rightClickStage", (e) => {
+            this.handleStageRightClick(e.event);
+          });
         });
     },
+    handleGraphLayoutChange(layout: string) {
+      if (layout == "circle") {
+        this.fa2layout.kill();
+        layoutAnimate(this.graph, circular(this.graph));
+      } else if (layout == "cluster") {
+        this.fa2layout.kill();
+        layoutAnimate(
+          this.graph,
+          circlepack(this.graph, {
+            hierarchyAttributes: ["labels"],
+            scale: 0.005,
+          })
+        );
+      } else if (layout == "force") {
+        const sensibleSettings = forceAtlas2.inferSettings(this.graph);
+        const fa2layout = new FA2Layout(this.graph, {
+          settings: sensibleSettings,
+        });
+        this.fa2layout = fa2layout;
+        fa2layout.start();
+      }
+      return 0;
+    },
+    handleNodeRightClick(e) {
+      e.original.preventDefault();
+      if (this.nodeContextMenu) {
+        this.nodeContextMenu.style.display = "initial";
+        this.nodeContextMenu.style.top = e.original.pageY + "px";
+        this.nodeContextMenu.style.left = e.original.pageX + "px";
+      }
+    },
+    handleStageRightClick(e) {
+      e.original.preventDefault();
+      store.dispatch("set", {
+        key: "graphRightClickPosition",
+        value: { x: e.x, y: e.y },
+      });
+      if (this.stageContextMenu) {
+        this.stageContextMenu.style.display = "initial";
+        this.stageContextMenu.style.top = e.original.pageY + "px";
+        this.stageContextMenu.style.left = e.original.pageX + "px";
+      }
+    },
+    handleStageClick() {
+      if (this.nodeContextMenu) {
+        this.nodeContextMenu.style.display = "none";
+      }
+      if (this.stageContextMenu) {
+        this.stageContextMenu.style.display = "none";
+      }
+    },
+    handleNodeDeleteClick() {
+      const graphNodeSelected = store.state.graphNodeSelected;
+      store.dispatch("set", {
+        key: "graphNodeSelected",
+        value: null,
+      });
+      this.graph.dropNode(graphNodeSelected);
+
+      store.dispatch("decrement", {
+        key: "graphNodeCount",
+        value: null,
+      });
+
+      if (this.nodeContextMenu) {
+        this.nodeContextMenu.style.display = "none";
+      }
+    },
+    handleNodeAddClick() {
+      // Sigma (ie. graph) and screen (viewport) coordinates are not the same.
+      // So we need to translate the screen x & y coordinates to the graph one by calling the sigma helper `viewportToGraph`
+      if (this.renderer) {
+        const coordForGraph = this.renderer.viewportToGraph(
+          store.state.graphRightClickPosition
+        );
+
+        const node = {
+          ...coordForGraph,
+          size: 4,
+          color: chroma.random().hex(),
+          label: "test",
+        };
+
+        const id = 1500;
+        this.graph.addNode(id, node);
+
+        store.dispatch("increment", {
+          key: "graphNodeCount",
+          value: null,
+        });
+
+        if (this.stageContextMenu) {
+          this.stageContextMenu.style.display = "none";
+        }
+      }
+    },
+    handleEdgeDeleteClick(e) {
+      console.log(e);
+    },
+    handleEdgeAddClick(e) {
+      console.log(e);
+    },
   },
-  mounted() {
-    // console.log(this.name);
+  computed: {
+    getGraphLayout() {
+      return store.state.graphLayout;
+    },
+  },
+  watch: {
+    getGraphLayout() {
+      this.handleGraphLayoutChange(store.state.graphLayout);
+      return;
+    },
   },
 });
 </script>
@@ -625,5 +763,27 @@ body,
   position: absolute;
   right: 1em;
   top: 4em;
+}
+
+.contextMenu {
+  display: none;
+  position: absolute;
+  width: 200px;
+  background-color: white;
+  box-shadow: 0 0 5px grey;
+  border-radius: 3px;
+}
+
+.contextMenu button {
+  width: 100%;
+  background-color: white;
+  border: none;
+  margin: 0;
+  padding: 10px;
+  text-align: left;
+}
+
+.contextMenu button:hover {
+  background-color: lightgray;
 }
 </style>
