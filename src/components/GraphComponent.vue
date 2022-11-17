@@ -283,16 +283,16 @@ export default defineComponent({
               // });
 
               /* delete node and its relationships by key test */
-              // axios({
-              //   method: "POST",
-              //   url: "http://localhost:8083/node",
-              //   data: {
-              //     method: "delete",
-              //     payload: {
-              //       key: 1046,
-              //     },
-              //   },
-              // });
+              axios({
+                method: "POST",
+                url: "http://localhost:8083/node",
+                data: {
+                  method: "delete",
+                  payload: {
+                    key: 1047,
+                  },
+                },
+              });
 
               /* update node by key test */
               // axios({
@@ -313,21 +313,21 @@ export default defineComponent({
               // });
 
               /* add relation test */
-              axios({
-                method: "POST",
-                url: "http://localhost:8083/edge",
-                data: {
-                  method: "add",
-                  payload: {
-                    source: 1048,
-                    target: 1049,
-                    attributes: {
-                      type: "TYPE_TEST",
-                      attribute1: "attribute1",
-                    },
-                  },
-                },
-              });
+              // axios({
+              //   method: "POST",
+              //   url: "http://localhost:8083/edge",
+              //   data: {
+              //     method: "add",
+              //     payload: {
+              //       source: 1048,
+              //       target: 1049,
+              //       attributes: {
+              //         type: "TYPE_TEST",
+              //         attribute1: "attribute1",
+              //       },
+              //     },
+              //   },
+              // });
             }
           );
 

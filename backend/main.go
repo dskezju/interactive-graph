@@ -333,6 +333,7 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 // delete node and its relationships by key
 func deleteNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, newnode Node) {
 	nodeID := newnode.Identity
+	// strconv.Atoi(marksStr)
 	addNodeCypher := `MATCH (n) WHERE ID(n) = $nodeID DETACH DELETE (n)`
 	fmt.Println(addNodeCypher)
 	addNodeResp, err := session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
