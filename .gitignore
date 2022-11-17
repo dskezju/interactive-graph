@@ -27,3 +27,4 @@ pnpm-debug.log*
 
 /localtest
 /src/config.ts
+/backend/config.go

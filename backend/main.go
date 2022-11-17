@@ -648,11 +648,9 @@ func main() {
 	serveMux := http.NewServeMux()
 	// serveMux.HandleFunc("/", defaultHandler)
 
-	// base := "/interactive-graph/api"
-	base := ""
-	serveMux.HandleFunc(base+"/graph/", graphHandler(driver, configuration.Database))
-	serveMux.HandleFunc(base+"/graph/node/", nodeHandler(driver, configuration.Database))
-	serveMux.HandleFunc(base+"/graph/edge/", edgeHandler(driver, configuration.Database))
+	serveMux.HandleFunc(BASE+"/graph/", graphHandler(driver, configuration.Database))
+	serveMux.HandleFunc(BASE+"/graph/node/", nodeHandler(driver, configuration.Database))
+	serveMux.HandleFunc(BASE+"/graph/edge/", edgeHandler(driver, configuration.Database))
 
 	fmt.Println(configuration)
 
