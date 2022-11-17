@@ -39,6 +39,7 @@
       <div id="nodeContextMenu" class="contextMenu">
         <div>
           <button id="nodeDelete" @click="handleNodeDeleteClick">delete</button>
+          <button id="edgeAdd" @click="handleEdgeAddClick">add edge</button>
         </div>
       </div>
       <div id="edgeContextMenu" class="contextMenu">
@@ -49,7 +50,6 @@
       <div id="stageContextMenu" class="contextMenu">
         <div>
           <button id="nodeAdd" @click="handleNodeAddClick">add node</button>
-          <button id="edgeAdd" @click="handleEdgeAddClick">add edge</button>
         </div>
       </div>
     </el-main>
@@ -149,7 +149,8 @@ export default defineComponent({
               attr["productName"] ||
               attr["companyName"] ||
               attr["shipName"] ||
-              attr["categoryName"];
+              attr["categoryName"] ||
+              attr["labels"];
             attr.size = attr["reorderLevel"] / 5;
             return attr;
           });
@@ -407,7 +408,9 @@ export default defineComponent({
                   id: n,
                   label: graph.getNodeAttribute(n, "label") as string,
                 }))
-                .filter(({ label }) => label.toLowerCase().includes(lcQuery));
+                .filter(({ label }) =>
+                  ("" + label).toLowerCase().includes(lcQuery)
+                );
 
               // If we have a single perfect match, them we remove the suggestions, and
               // we consider the user has selected a node through the datalist
@@ -586,7 +589,7 @@ export default defineComponent({
             state.selectedNode = undefined;
             store.dispatch("set", {
               key: "graphNodeSelected",
-              value: null,
+              value: -1,
             });
           });
 
@@ -685,9 +688,8 @@ export default defineComponent({
 
         const node = {
           ...coordForGraph,
-          size: 4,
           color: chroma(colorize("new")).hex(),
-          label: "new",
+          labels: ["new"],
         };
 
         axios({
@@ -696,9 +698,7 @@ export default defineComponent({
           data: {
             method: "add",
             payload: {
-              attributes: {
-                labels: "new",
-              },
+              attributes: {},
             },
           },
         }).then((rsp) => {
@@ -721,6 +721,10 @@ export default defineComponent({
       console.log(e);
     },
     handleEdgeAddClick(e) {
+      const graphNodeSelected = store.state.graphNodeSelected;
+      if (this.nodeContextMenu) {
+        this.nodeContextMenu.style.display = "none";
+      }
       console.log(e);
     },
   },
@@ -822,5 +826,9 @@ body,
 
 .contextMenu button:hover {
   background-color: lightgray;
+}
+
+.chooseform {
+  margin-top: 5px;
 }
 </style>

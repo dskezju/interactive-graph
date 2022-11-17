@@ -60,17 +60,24 @@
       <el-scrollbar height="500px">
         <div v-if="getIsGraphNodeSelected()">
           <div
-            v-for="(value, key) in getSelectedNodeAttributes()"
-            :key="key"
+            v-for="(dict, i) in getSelectedNodeAttributes()"
+            :key="i"
             class="chooseform"
           >
             <el-row>
-              <el-col :span="12">{{ key }} </el-col>
-              <el-col :span="12">
+              <el-col :span="8"
+                ><el-input
+                  v-model="dict.key"
+                  class="attr-input"
+                  :placeholder="dict.key"
+                  size="small"
+                />
+              </el-col>
+              <el-col :span="16">
                 <el-input
-                  v-model="attrs[key]"
-                  :placeholder="value"
-                  clearable
+                  v-model="dict.value"
+                  class="attr-input"
+                  :placeholder="dict.value"
                   size="small"
               /></el-col>
             </el-row>
@@ -203,16 +210,22 @@ export default defineComponent({
       return store.state.graphEdgeCount;
     },
     getIsGraphNodeSelected() {
-      return store.state.graphNodeSelected != null;
+      return store.state.graphNodeSelected != -1;
     },
     getSelectedNodeAttributes() {
       if (
         store.state.graph &&
         store.state.graph.hasNode(store.state.graphNodeSelected)
       ) {
-        this.attrs = store.state.graph.getNodeAttributes(
+        const attributes = store.state.graph.getNodeAttributes(
           store.state.graphNodeSelected
         );
+
+        this.attrs = Object.entries(attributes).map(([key, value]) => ({
+          key: key,
+          value: value,
+        }));
+
         return this.attrs;
       }
     },
@@ -250,5 +263,9 @@ export default defineComponent({
   font-size: 14px;
   color: #303133;
   margin-top: 20px;
+}
+
+.attr-input :first-child {
+  box-shadow: none;
 }
 </style>

@@ -271,7 +271,7 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 
 	fmt.Println("add node ", newnode)
 	var buffer bytes.Buffer
-	buffer.WriteString("CREATE (n")
+	buffer.WriteString("CREATE (n:new")
 	for key, val := range newnode.Properties {
 		if key == NODE_LABEL {
 			buffer.WriteString(":")
