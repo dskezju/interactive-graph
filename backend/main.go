@@ -559,6 +559,34 @@ func addEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session, nR
 
 func deleteEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session, nReq EdgeRequest) {
 
+	edgeID := nReq.Identity
+	deleteEdgeCypher := "MATCH ()-[r]-() WHERE ID(r)=$edgeID DELETE r "
+	fmt.Println(deleteEdgeCypher, edgeID)
+	deleteEdgeResp, err := session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
+		result, err := tx.Run(deleteEdgeCypher, map[string]interface{}{
+			"edgeID": edgeID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(result)
+		var summary, _ = result.Consume()
+		var deleteEdge EdgeResult
+		deleteEdge.Success = summary.Counters().RelationshipsDeleted()
+		fmt.Println(deleteEdge)
+
+		// return the number of nodes created.
+		return deleteEdge, nil
+	})
+	if err != nil {
+		log.Println("error adding node:", err)
+		return
+	}
+	err = json.NewEncoder(w).Encode(deleteEdgeResp)
+	if err != nil {
+		log.Println("error writing node response:", err)
+	}
+
 }
 
 func updateEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session, nReq EdgeRequest) {
