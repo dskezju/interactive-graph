@@ -63,12 +63,11 @@ type Edge struct {
 }
 
 func parseConfiguration() *Neo4jConfiguration {
-
 	return &Neo4jConfiguration{
-		Url:      "neo4j://localhost:7687",
-		Username: "neo4j",
-		Password: "Northwind",
-		Database: "neo4j",
+		Url:      NEO4J_URL,
+		Username: NEO4J_USERNAME,
+		Password: NEO4J_PASSWORD,
+		Database: NEO4J_DATABASE,
 	}
 }
 
@@ -613,7 +612,7 @@ func main() {
 	var port string
 	var found bool
 	if port, found = os.LookupEnv("PORT"); !found {
-		port = "8083"
+		port = PORT
 	}
 	fmt.Printf("Running on port %s, database is at %s\n", port, configuration.Url)
 	panic(http.ListenAndServe(":"+port, serveMux))
