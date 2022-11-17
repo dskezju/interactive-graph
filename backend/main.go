@@ -282,7 +282,7 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 			break
 		}
 	}
-	buffer.WriteString("{")
+	buffer.WriteString(" {")
 	index := 0
 	for key, val := range newnode.Properties {
 		if key == NODE_LABEL {
@@ -302,7 +302,7 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 			log.Println("error: the type of attribute is not string.")
 		}
 	}
-	buffer.WriteString("})")
+	buffer.WriteString("}) RETURN ID(n) as nodeID")
 
 	addNodeCypher := buffer.String()
 	fmt.Println(addNodeCypher)
@@ -311,12 +311,26 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 		if err != nil {
 			return nil, err
 		}
-		// fmt.Println(result)
+		var message bytes.Buffer
+		for result.Next() {
+			record := result.Record()
+			if id, findit := record.Get("nodeID"); findit {
+				if data, ok := id.(int64); ok {
+					message.WriteString("ADD NODE: {key: ")
+					strData := strconv.FormatInt(data, 10)
+					message.WriteString(strData)
+					message.WriteString("}")
+				}
+			}
+
+		}
+
+		// fmt.Println(nodeID)
 		var summary, _ = result.Consume()
 		var addNodeResult NodeResult
 		addNodeResult.Success = summary.Counters().NodesCreated()
+		addNodeResult.Message = message.String()
 		fmt.Println(addNodeResult)
-
 		// return the number of nodes created.
 		return addNodeResult, nil
 	})
@@ -560,7 +574,8 @@ func main() {
 	serveMux := http.NewServeMux()
 	// serveMux.HandleFunc("/", defaultHandler)
 
-	base := "/interactive-graph/api"
+	// base := "/interactive-graph/api"
+	base := ""
 	serveMux.HandleFunc(base+"/graph/", graphHandler(driver, configuration.Database))
 	serveMux.HandleFunc(base+"/graph/node/", nodeHandler(driver, configuration.Database))
 	serveMux.HandleFunc(base+"/graph/edge/", edgeHandler(driver, configuration.Database))

@@ -277,22 +277,23 @@ export default defineComponent({
             // closestNodes.forEach((e) => graph.addEdge(id, e.nodeId));
             /* Input:  */
             /* add node test */
-            // axios({
-            //   method: "POST",
-            //   url: "http://localhost:8083/node",
-            //   data: {
-            //     method: "add",
-            //     payload: {
-            //       // key: 1,
-            //       attributes: {
-            //         labels: "Label_test",
-            //         attribute1: "attribute1",
-            //         attribute2: "attribute2",
-            //         attribute3: "attribute3",
-            //       },
-            //     },
-            //   },
-            // });
+            axios({
+              method: "POST",
+              url: "http://localhost:8083/graph/node/",
+              data: {
+                method: "add",
+                payload: {
+                  // key: 1,
+                  attributes: {
+                    labels: "Label_test",
+                    attribute1: "attribute1",
+                    attribute2: "attribute2",
+                    attribute3: "attribute3",
+                  },
+                },
+              },
+            });
+
             /* delete node and its relationships by key test */
             // axios({
             //   method: "POST",
