@@ -1,3 +1,4 @@
+import Graph from "graphology";
 import { createStore } from "vuex";
 
 export default createStore({
@@ -5,8 +6,8 @@ export default createStore({
     graphNodeCount: 0,
     graphEdgeCount: 0,
     graphLayout: "",
-    graph: null,
-    graphNodeSelected: null,
+    graph: new Graph(),
+    graphNodeSelected: -1,
     graphRightClickPosition: { x: 0, y: 0 },
   },
   getters: {},

@@ -638,20 +638,32 @@ export default defineComponent({
     },
     handleNodeDeleteClick() {
       const graphNodeSelected = store.state.graphNodeSelected;
-      store.dispatch("set", {
-        key: "graphNodeSelected",
-        value: null,
-      });
-      this.graph.dropNode(graphNodeSelected);
-
-      store.dispatch("decrement", {
-        key: "graphNodeCount",
-        value: null,
-      });
-
       if (this.nodeContextMenu) {
         this.nodeContextMenu.style.display = "none";
       }
+
+      axios({
+        method: "POST",
+        url: BACKEND + "/graph/node/",
+        data: {
+          method: "delete",
+          payload: {
+            key: +graphNodeSelected,
+          },
+        },
+      }).then(() => {
+        /// backend responds with success
+        store.dispatch("set", {
+          key: "graphNodeSelected",
+          value: null,
+        });
+        this.graph.dropNode(graphNodeSelected);
+
+        store.dispatch("decrement", {
+          key: "graphNodeCount",
+          value: null,
+        });
+      });
     },
     handleNodeAddClick() {
       // Sigma (ie. graph) and screen (viewport) coordinates are not the same.
@@ -665,16 +677,31 @@ export default defineComponent({
           ...coordForGraph,
           size: 4,
           color: chroma.random().hex(),
-          label: "test",
+          label: "new",
         };
 
-        const id = 1500;
-        this.graph.addNode(id, node);
-
-        store.dispatch("increment", {
-          key: "graphNodeCount",
-          value: null,
+        axios({
+          method: "POST",
+          url: BACKEND + "/graph/node/",
+          data: {
+            method: "add",
+            payload: {
+              attributes: {
+                labels: "new",
+              },
+            },
+          },
+        }).then((rsp) => {
+          console.log(rsp);
         });
+
+        // const id = 1047;
+        // this.graph.addNode(id, node);
+
+        // store.dispatch("increment", {
+        //   key: "graphNodeCount",
+        //   value: null,
+        // });
 
         if (this.stageContextMenu) {
           this.stageContextMenu.style.display = "none";

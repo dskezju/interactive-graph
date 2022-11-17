@@ -57,27 +57,27 @@
       <div class="informtext">Edges: {{ getGraphEdgeCount() }}</div>
 
       <el-divider> </el-divider>
-
-      <div v-if="getIsGraphNodeSelected()">
-        <div
-          v-for="(value, key) in getSelectedNodeAttributes()"
-          :key="key"
-          class="chooseform"
-        >
-          <el-row>
-            <el-col :span="12">{{ key }} </el-col>
-            <el-col :span="12">
-              <el-input
-                v-model="attrs[key]"
-                :placeholder="value"
-                clearable
-                size="small"
-            /></el-col>
-          </el-row>
+      <el-scrollbar height="500px">
+        <div v-if="getIsGraphNodeSelected()">
+          <div
+            v-for="(value, key) in getSelectedNodeAttributes()"
+            :key="key"
+            class="chooseform"
+          >
+            <el-row>
+              <el-col :span="12">{{ key }} </el-col>
+              <el-col :span="12">
+                <el-input
+                  v-model="attrs[key]"
+                  :placeholder="value"
+                  clearable
+                  size="small"
+              /></el-col>
+            </el-row>
+          </div>
+          <el-button type="primary" @click="onSubmit">Update</el-button>
         </div>
-        <el-button type="primary" @click="onSubmit">Update</el-button>
-      </div>
-
+      </el-scrollbar>
       <!-- <el-row>
         <el-col :span="12">
           <div class="informtext">Color nodes select:</div>
@@ -206,9 +206,10 @@ export default defineComponent({
       return store.state.graphNodeSelected != null;
     },
     getSelectedNodeAttributes() {
-      if (store.state.graph && store.state.graphNodeSelected) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
+      if (
+        store.state.graph &&
+        store.state.graph.hasNode(store.state.graphNodeSelected)
+      ) {
         this.attrs = store.state.graph.getNodeAttributes(
           store.state.graphNodeSelected
         );
