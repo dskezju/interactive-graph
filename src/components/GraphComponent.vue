@@ -279,7 +279,7 @@ export default defineComponent({
             /* add node test */
             // axios({
             //   method: "POST",
-            //   url: "http://localhost:8083/node",
+            //   url: "http://localhost:8083/graph/node/",
             //   data: {
             //     method: "add",
             //     payload: {
@@ -337,6 +337,18 @@ export default defineComponent({
             //     },
             //   },
             // });
+
+            /* delete relation by key test */
+            axios({
+              method: "POST",
+              url: "http://localhost:8083/graph/edge/",
+              data: {
+                method: "delete",
+                payload: {
+                  key: 3100,
+                },
+              },
+            });
           });
 
           //

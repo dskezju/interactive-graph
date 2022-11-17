@@ -284,7 +284,7 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 			break
 		}
 	}
-	buffer.WriteString("{")
+	buffer.WriteString(" {")
 	index := 0
 	for key, val := range newnode.Properties {
 		if key == NODE_LABEL {
@@ -304,7 +304,7 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 			log.Println("error: the type of attribute is not string.")
 		}
 	}
-	buffer.WriteString("})")
+	buffer.WriteString("}) RETURN ID(n) as nodeID")
 
 	addNodeCypher := buffer.String()
 	fmt.Println(addNodeCypher)
@@ -313,12 +313,26 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 		if err != nil {
 			return nil, err
 		}
-		// fmt.Println(result)
+		var message bytes.Buffer
+		for result.Next() {
+			record := result.Record()
+			if id, findit := record.Get("nodeID"); findit {
+				if data, ok := id.(int64); ok {
+					message.WriteString("ADD NODE: {key: ")
+					strData := strconv.FormatInt(data, 10)
+					message.WriteString(strData)
+					message.WriteString("}")
+				}
+			}
+
+		}
+
+		// fmt.Println(nodeID)
 		var summary, _ = result.Consume()
 		var addNodeResult NodeResult
 		addNodeResult.Success = summary.Counters().NodesCreated()
+		addNodeResult.Message = message.String()
 		fmt.Println(addNodeResult)
-
 		// return the number of nodes created.
 		return addNodeResult, nil
 	})
@@ -335,6 +349,7 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 // delete node and its relationships by key
 func deleteNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, newnode Node) {
 	nodeID := newnode.Identity
+	// strconv.Atoi(marksStr)
 	addNodeCypher := `MATCH (n) WHERE ID(n) = $nodeID DETACH DELETE (n)`
 	fmt.Println(addNodeCypher, nodeID)
 	addNodeResp, err := session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
@@ -544,6 +559,34 @@ func addEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session, nR
 
 func deleteEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session, nReq EdgeRequest) {
 
+	edgeID := nReq.Identity
+	deleteEdgeCypher := "MATCH ()-[r]-() WHERE ID(r)=$edgeID DELETE r "
+	fmt.Println(deleteEdgeCypher, edgeID)
+	deleteEdgeResp, err := session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
+		result, err := tx.Run(deleteEdgeCypher, map[string]interface{}{
+			"edgeID": edgeID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(result)
+		var summary, _ = result.Consume()
+		var deleteEdge EdgeResult
+		deleteEdge.Success = summary.Counters().RelationshipsDeleted()
+		fmt.Println(deleteEdge)
+
+		// return the number of nodes created.
+		return deleteEdge, nil
+	})
+	if err != nil {
+		log.Println("error adding node:", err)
+		return
+	}
+	err = json.NewEncoder(w).Encode(deleteEdgeResp)
+	if err != nil {
+		log.Println("error writing node response:", err)
+	}
+
 }
 
 func updateEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session, nReq EdgeRequest) {
@@ -561,7 +604,8 @@ func main() {
 	serveMux := http.NewServeMux()
 	// serveMux.HandleFunc("/", defaultHandler)
 
-	base := "/interactive-graph/api"
+	// base := "/interactive-graph/api"
+	base := ""
 	serveMux.HandleFunc(base+"/graph/", graphHandler(driver, configuration.Database))
 	serveMux.HandleFunc(base+"/graph/node/", nodeHandler(driver, configuration.Database))
 	serveMux.HandleFunc(base+"/graph/edge/", edgeHandler(driver, configuration.Database))
