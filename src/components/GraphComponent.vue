@@ -339,13 +339,30 @@ export default defineComponent({
             // });
 
             /* delete relation by key test */
+            // axios({
+            //   method: "POST",
+            //   url: "http://localhost:8083/graph/edge/",
+            //   data: {
+            //     method: "delete",
+            //     payload: {
+            //       key: 3100,
+            //     },
+            //   },
+            // });
+
+            /* update relation by key test */
             axios({
               method: "POST",
               url: "http://localhost:8083/graph/edge/",
               data: {
-                method: "delete",
+                method: "update",
                 payload: {
-                  key: 3100,
+                  key: 3103,
+                  // source: 1048,
+                  // target: 1049,
+                  attributes: {
+                    attribute1: "newattribute",
+                  },
                 },
               },
             });

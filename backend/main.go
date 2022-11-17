@@ -574,7 +574,6 @@ func deleteEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session,
 		var deleteEdge EdgeResult
 		deleteEdge.Success = summary.Counters().RelationshipsDeleted()
 		fmt.Println(deleteEdge)
-
 		// return the number of nodes created.
 		return deleteEdge, nil
 	})
@@ -590,7 +589,52 @@ func deleteEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session,
 }
 
 func updateEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session, nReq EdgeRequest) {
+	fmt.Println(nReq)
+	// var updateEdgeRes EdgeResult
 
+	var buffer bytes.Buffer
+	buffer.WriteString("MATCH ()-[r]-() WHERE ID(r)=$edgeID ")
+
+	for key, val := range nReq.Properties {
+		buffer.WriteString("SET r.")
+		buffer.WriteString(key)
+		buffer.WriteString(" = ")
+		if rec, ok := val.(string); ok {
+			buffer.WriteString("'")
+			buffer.WriteString(rec)
+			buffer.WriteString("' ")
+		} else {
+			log.Println("error: the type of attribute is not string.")
+		}
+	}
+	updateEdgeCypher := buffer.String()
+	edgeID := nReq.Identity
+	fmt.Println(updateEdgeCypher, edgeID)
+	updateEdgeResp, err := session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
+		result, err := tx.Run(updateEdgeCypher, map[string]interface{}{
+			"edgeID": edgeID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		// fmt.Println(result)
+		var summary, _ = result.Consume()
+		var updateEdgeResult EdgeResult
+		// The number of relationships created.
+		updateEdgeResult.Success = summary.Counters().PropertiesSet()
+		fmt.Println(updateEdgeResult)
+
+		// return the number of nodes created.
+		return updateEdgeResult, nil
+	})
+	if err != nil {
+		log.Println("error adding node:", err)
+		return
+	}
+	err = json.NewEncoder(w).Encode(updateEdgeResp)
+	if err != nil {
+		log.Println("error writing node response:", err)
+	}
 }
 
 func main() {
