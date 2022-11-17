@@ -206,9 +206,10 @@ export default defineComponent({
       return store.state.graphNodeSelected != null;
     },
     getSelectedNodeAttributes() {
-      if (store.state.graph && store.state.graphNodeSelected) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
+      if (
+        store.state.graph &&
+        store.state.graph.hasNode(store.state.graphNodeSelected)
+      ) {
         this.attrs = store.state.graph.getNodeAttributes(
           store.state.graphNodeSelected
         );

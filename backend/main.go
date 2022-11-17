@@ -248,6 +248,7 @@ func nodeHandler(driver neo4j.Driver, database string) func(http.ResponseWriter,
 			// fmt.Println(buf)
 			var nReq NodeRequest
 			json.NewDecoder(strings.NewReader(string(buf))).Decode(&nReq)
+			fmt.Println(nReq)
 			session := driver.NewSession(neo4j.SessionConfig{
 				AccessMode:   neo4j.AccessModeRead,
 				DatabaseName: database,
@@ -269,6 +270,7 @@ func nodeHandler(driver neo4j.Driver, database string) func(http.ResponseWriter,
 func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, newnode Node) {
 	NODE_LABEL := "labels"
 
+	fmt.Println("add node ", newnode)
 	var buffer bytes.Buffer
 	buffer.WriteString("CREATE (n")
 	for key, val := range newnode.Properties {

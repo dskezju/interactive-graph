@@ -647,7 +647,7 @@ export default defineComponent({
         data: {
           method: "delete",
           payload: {
-            key: graphNodeSelected,
+            key: +graphNodeSelected,
           },
         },
       }).then(() => {
@@ -676,16 +676,31 @@ export default defineComponent({
           ...coordForGraph,
           size: 4,
           color: chroma.random().hex(),
-          label: "test",
+          label: "new",
         };
 
-        const id = 1500;
-        this.graph.addNode(id, node);
-
-        store.dispatch("increment", {
-          key: "graphNodeCount",
-          value: null,
+        axios({
+          method: "POST",
+          url: BACKEND + "/graph/node/",
+          data: {
+            method: "add",
+            payload: {
+              attributes: {
+                labels: "new",
+              },
+            },
+          },
+        }).then((rsp) => {
+          console.log(rsp);
         });
+
+        // const id = 1047;
+        // this.graph.addNode(id, node);
+
+        // store.dispatch("increment", {
+        //   key: "graphNodeCount",
+        //   value: null,
+        // });
 
         if (this.stageContextMenu) {
           this.stageContextMenu.style.display = "none";
