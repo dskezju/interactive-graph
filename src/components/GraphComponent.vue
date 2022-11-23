@@ -70,7 +70,7 @@ import circular from "graphology-layout/circular";
 import { layoutAnimate } from "@/lib/layoutAnimation";
 import { drawHover } from "@/utils/canvas";
 import LeftPanel from "@/components/LeftPanel.vue";
-import { defineComponent, ref, render } from "vue";
+import { defineComponent, ref } from "vue";
 
 import store from "@/store";
 import axios from "axios";
@@ -417,7 +417,7 @@ export default defineComponent({
             state.hoveredEdge = edge;
             renderer.refresh();
           });
-          renderer.on("leaveEdge", ({ edge }) => {
+          renderer.on("leaveEdge", () => {
             state.hoveredEdge = undefined;
             renderer.refresh();
           });
@@ -798,7 +798,7 @@ export default defineComponent({
         }
       }
     },
-    handleEdgeDeleteClick(e) {
+    handleEdgeDeleteClick() {
       const graphItemSelected = store.state.graphItemSelected;
       if (graphItemSelected == null) {
         return;
@@ -830,7 +830,7 @@ export default defineComponent({
         });
       });
     },
-    handleEdgeAddClick(e) {
+    handleEdgeAddClick() {
       if (this.nodeContextMenu) {
         this.nodeContextMenu.style.display = "none";
       }
