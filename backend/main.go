@@ -318,7 +318,6 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 			if id, findit := record.Get("nodeID"); findit {
 				if data, ok := id.(int64); ok {
 					strData := strconv.FormatInt(data, 10)
-					message.WriteString("key: ")
 					message.WriteString(strData)
 				}
 			}
@@ -547,7 +546,6 @@ func addEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session, nR
 			if id, findit := record.Get("edgeID"); findit {
 				if data, ok := id.(int64); ok {
 					strData := strconv.FormatInt(data, 10)
-					message.WriteString("key: ")
 					message.WriteString(strData)
 				}
 			}

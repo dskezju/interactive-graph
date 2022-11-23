@@ -767,7 +767,7 @@ export default defineComponent({
           store.state.graphRightClickPosition
         );
 
-        const node = {
+        const node_attr = {
           ...coordForGraph,
           color: chroma(colorize("new")).hex(),
           labels: ["new"],
@@ -785,7 +785,7 @@ export default defineComponent({
         }).then((rsp) => {
           if (rsp.data.success) {
             const id = rsp.data.message as number;
-            this.graph.addNode(id, node);
+            this.graph.addNode(id, node_attr);
           }
           store.dispatch("increment", {
             key: "graphNodeCount",
@@ -856,13 +856,23 @@ export default defineComponent({
               },
             },
           },
-        }).then(() => {
-          this.graph.addEdge(state.nodeToConnect, node);
-          state.nodeToConnect = undefined;
-          store.dispatch("increment", {
-            key: "graphEdgeCount",
-            value: null,
-          });
+        }).then((rsp) => {
+          if (rsp.data.success) {
+            const edge_attr = {
+              edge_type: "new",
+            };
+            this.graph.mergeEdgeWithKey(
+              rsp.data.message,
+              state.nodeToConnect,
+              node,
+              edge_attr
+            );
+            state.nodeToConnect = undefined;
+            store.dispatch("increment", {
+              key: "graphEdgeCount",
+              value: null,
+            });
+          }
         });
       }
     },
