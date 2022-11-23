@@ -324,4 +324,12 @@ export default defineComponent({
   color: #ddd;
   background-color: transparent;
 }
+
+.el-row:hover > div > .el-button.attributes-delete-button:hover {
+  color: #a00;
+}
+
+.el-button.attributes-delete-button:focus {
+  background-color: transparent;
+}
 </style>
