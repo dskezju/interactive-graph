@@ -58,7 +58,7 @@
         <div class="informtext">Edges: {{ getGraphEdgeCount() }}</div>
 
         <el-divider> </el-divider>
-        <div v-if="getIsGraphNodeSelected()">
+        <div v-if="getIsGraphItemSelected()">
           <el-form
             ref="formRef"
             :model="attrs"
@@ -240,25 +240,35 @@ export default defineComponent({
     getGraphEdgeCount() {
       return store.state.graphEdgeCount;
     },
-    getIsGraphNodeSelected() {
-      this.attrs = this.getSelectedNodeAttributes();
-      return store.state.graphNodeSelected != -1;
+
+    getIsGraphItemSelected() {
+      return store.state.graphItemSelected;
     },
-    getSelectedNodeAttributes() {
-      if (
-        store.state.graph &&
-        store.state.graph.hasNode(store.state.graphNodeSelected)
-      ) {
-        const attributes = store.state.graph.getNodeAttributes(
-          store.state.graphNodeSelected
-        );
+    getSelectedItemAttributes() {
+      if (store.state.graph && store.state.graphItemSelected) {
+        if (store.state.graphItemSelected["type"] == "node") {
+          const attributes = store.state.graph.getNodeAttributes(
+            store.state.graphItemSelected["id"]
+          );
 
         this.attrs = Object.entries(attributes).map(([key, value]) => ({
           key: key,
           value: value.toString(),
         }));
 
-        return this.attrs;
+          return this.attrs;
+        } else if (store.state.graphItemSelected["type"] == "edge") {
+          const attributes = store.state.graph.getEdgeAttributes(
+            store.state.graphItemSelected["id"]
+          );
+
+          this.attrs = Object.entries(attributes).map(([key, value]) => ({
+            key: key,
+            value: value,
+          }));
+
+          return this.attrs;
+        }
       }
     },
     handelLayoutChange(layoutId) {

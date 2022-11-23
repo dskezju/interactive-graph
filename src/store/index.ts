@@ -1,13 +1,22 @@
 import Graph from "graphology";
 import { createStore } from "vuex";
 
-export default createStore({
+interface State {
+  graphNodeCount: number;
+  graphEdgeCount: number;
+  graphLayout: string;
+  graph: Graph | null;
+  graphItemSelected: { type: string; id: string } | null;
+  graphRightClickPosition: { x: number; y: number };
+}
+
+export default createStore<State>({
   state: {
     graphNodeCount: 0,
     graphEdgeCount: 0,
     graphLayout: "",
-    graph: new Graph(),
-    graphNodeSelected: -1,
+    graph: null,
+    graphItemSelected: null,
     graphRightClickPosition: { x: 0, y: 0 },
   },
   getters: {},

@@ -44,7 +44,7 @@
       </div>
       <div id="edgeContextMenu" class="contextMenu">
         <div>
-          <button id="edgeDelete" @click="handleNodeDeleteClick">delete</button>
+          <button id="edgeDelete" @click="handleEdgeDeleteClick">delete</button>
         </div>
       </div>
       <div id="stageContextMenu" class="contextMenu">
@@ -70,7 +70,7 @@ import circular from "graphology-layout/circular";
 import { layoutAnimate } from "@/lib/layoutAnimation";
 import { drawHover } from "@/utils/canvas";
 import LeftPanel from "@/components/LeftPanel.vue";
-import { defineComponent, ref } from "vue";
+import { defineComponent, ref, render } from "vue";
 
 import store from "@/store";
 import axios from "axios";
@@ -89,6 +89,28 @@ function colorize(str: string) {
   return "#" + Array(6 - color.length + 1).join("0") + color;
 }
 
+// Type and declare internal state:
+interface State {
+  hoveredNode?: string;
+  hoveredEdge?: string;
+  searchQuery: string;
+
+  // State derived from query:
+  selectedNode?: string;
+  selectedEdge?: string;
+  suggestions?: Set<string>;
+
+  // State derived from hovered node:
+  hoveredNeighbors?: Set<string>;
+
+  isDragging?: boolean;
+  nodeToConnect?: string;
+}
+const state: State = {
+  searchQuery: "",
+  isDragging: false,
+};
+
 export default defineComponent({
   name: "GraphComponent",
   components: {
@@ -101,6 +123,7 @@ export default defineComponent({
       fa2layout: new FA2Layout(new Graph()),
       stageContextMenu: ref<HTMLElement>(),
       nodeContextMenu: ref<HTMLElement>(),
+      edgeContextMenu: ref<HTMLElement>(),
       renderer: ref<Sigma>(),
     };
   },
@@ -113,6 +136,9 @@ export default defineComponent({
     ) as HTMLElement;
     this.nodeContextMenu = document.getElementById(
       "nodeContextMenu"
+    ) as HTMLElement;
+    this.edgeContextMenu = document.getElementById(
+      "edgeContextMenu"
     ) as HTMLElement;
   },
   methods: {
@@ -183,11 +209,17 @@ export default defineComponent({
               circle: NodeProgramFull,
             },
             renderEdgeLabels: true,
+            enableEdgeHoverEvents: "debounce",
+            enableEdgeClickEvents: true,
           });
           this.renderer = renderer;
 
           renderer.on("rightClickNode", (e) => {
             this.handleNodeRightClick(e.event);
+          });
+
+          renderer.on("rightClickEdge", (e) => {
+            this.handleEdgeRightClick(e.event);
           });
 
           graph.forEachNode((node, attr) => {
@@ -351,6 +383,23 @@ export default defineComponent({
             // });
           });
 
+          renderer.on("enterEdge", ({ edge }) => {
+            state.hoveredEdge = edge;
+            renderer.refresh();
+          });
+          renderer.on("leaveEdge", ({ edge }) => {
+            state.hoveredEdge = undefined;
+            renderer.refresh();
+          });
+          renderer.on("clickEdge", ({ edge }) => {
+            state.selectedEdge = edge;
+            store.dispatch("set", {
+              key: "graphItemSelected",
+              value: { type: "edge", id: edge },
+            });
+            renderer.refresh();
+          });
+
           //
           // highlight and search
           // ~~~~~~~~~~~~~~~~~~~~
@@ -362,25 +411,6 @@ export default defineComponent({
           const searchSuggestions = document.getElementById(
             "suggestions"
           ) as HTMLDataListElement;
-
-          // Type and declare internal state:
-          interface State {
-            hoveredNode?: string;
-            searchQuery: string;
-
-            // State derived from query:
-            selectedNode?: string;
-            suggestions?: Set<string>;
-
-            // State derived from hovered node:
-            hoveredNeighbors?: Set<string>;
-
-            isDragging?: boolean;
-          }
-          const state: State = {
-            searchQuery: "",
-            isDragging: false,
-          };
 
           // Feed the datalist autocomplete values:
           searchSuggestions.innerHTML = graph
@@ -524,6 +554,10 @@ export default defineComponent({
               res.hidden = true;
             }
 
+            if (edge == state.hoveredEdge || edge == state.selectedEdge) {
+              res.color = "#cc0000";
+            }
+
             return res;
           });
 
@@ -545,12 +579,16 @@ export default defineComponent({
             state.isDragging = true;
             state.selectedNode = e.node;
             store.dispatch("set", {
-              key: "graphNodeSelected",
-              value: e.node,
+              key: "graphItemSelected",
+              value: { type: "node", id: e.node },
             });
             this.fa2layout.stop();
             draggedNode = e.node;
             graph.setNodeAttribute(draggedNode, "highlighted", true);
+          });
+
+          renderer.on("clickNode", (e) => {
+            this.handleNodeClick(e.node);
           });
 
           // On mouse move, if the drag mode is enabled, we change the position of the draggedNode
@@ -587,10 +625,12 @@ export default defineComponent({
 
           renderer.on("clickStage", () => {
             state.selectedNode = undefined;
+            state.selectedEdge = undefined;
             store.dispatch("set", {
-              key: "graphNodeSelected",
-              value: -1,
+              key: "graphItemSelected",
+              value: null,
             });
+            renderer.refresh();
           });
 
           renderer.on("rightClickStage", (e) => {
@@ -629,6 +669,14 @@ export default defineComponent({
         this.nodeContextMenu.style.left = e.original.pageX + "px";
       }
     },
+    handleEdgeRightClick(e) {
+      e.original.preventDefault();
+      if (this.edgeContextMenu) {
+        this.edgeContextMenu.style.display = "initial";
+        this.edgeContextMenu.style.top = e.original.pageY + "px";
+        this.edgeContextMenu.style.left = e.original.pageX + "px";
+      }
+    },
     handleStageRightClick(e) {
       e.original.preventDefault();
       store.dispatch("set", {
@@ -650,7 +698,10 @@ export default defineComponent({
       }
     },
     handleNodeDeleteClick() {
-      const graphNodeSelected = store.state.graphNodeSelected;
+      const graphItemSelected = store.state.graphItemSelected;
+      if (graphItemSelected == null) {
+        return;
+      }
       if (this.nodeContextMenu) {
         this.nodeContextMenu.style.display = "none";
       }
@@ -661,16 +712,16 @@ export default defineComponent({
         data: {
           method: "delete",
           payload: {
-            key: +graphNodeSelected,
+            key: +graphItemSelected["id"],
           },
         },
       }).then(() => {
         /// backend responds with success
         store.dispatch("set", {
-          key: "graphNodeSelected",
+          key: "graphItemSelected",
           value: null,
         });
-        this.graph.dropNode(graphNodeSelected);
+        this.graph.dropNode(graphItemSelected["id"]);
 
         store.dispatch("decrement", {
           key: "graphNodeCount",
@@ -718,14 +769,66 @@ export default defineComponent({
       }
     },
     handleEdgeDeleteClick(e) {
-      console.log(e);
+      const graphItemSelected = store.state.graphItemSelected;
+      if (graphItemSelected == null) {
+        return;
+      }
+      if (this.edgeContextMenu) {
+        this.edgeContextMenu.style.display = "none";
+      }
+
+      axios({
+        method: "POST",
+        url: BACKEND + "/graph/edge/",
+        data: {
+          method: "delete",
+          payload: {
+            key: +graphItemSelected["id"],
+          },
+        },
+      }).then(() => {
+        /// backend responds with success
+        store.dispatch("set", {
+          key: "graphItemSelected",
+          value: null,
+        });
+        this.graph.dropEdge(graphItemSelected["id"]);
+
+        store.dispatch("decrement", {
+          key: "graphEdgeCount",
+          value: null,
+        });
+      });
     },
     handleEdgeAddClick(e) {
-      const graphNodeSelected = store.state.graphNodeSelected;
       if (this.nodeContextMenu) {
         this.nodeContextMenu.style.display = "none";
       }
-      console.log(e);
+
+      const graphItemSelected = store.state.graphItemSelected;
+      if (graphItemSelected == null) {
+        return;
+      }
+      state.nodeToConnect = graphItemSelected.id;
+    },
+    handleNodeClick(node) {
+      if (state.nodeToConnect) {
+        axios({
+          method: "POST",
+          url: BACKEND + "/graph/edge",
+          data: {
+            method: "add",
+            payload: {
+              source: +state.nodeToConnect,
+              target: +node,
+              attributes: {},
+            },
+          },
+        }).then(() => {
+          this.graph.addEdge(state.nodeToConnect, node);
+          state.nodeToConnect = undefined;
+        });
+      }
     },
   },
   computed: {
