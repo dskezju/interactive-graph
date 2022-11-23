@@ -857,6 +857,10 @@ export default defineComponent({
         }).then(() => {
           this.graph.addEdge(state.nodeToConnect, node);
           state.nodeToConnect = undefined;
+          store.dispatch("increment", {
+            key: "graphEdgeCount",
+            value: null,
+          });
         });
       }
     },
