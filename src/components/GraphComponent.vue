@@ -322,21 +322,21 @@ export default defineComponent({
             //   },
             // });
             /* add relation test */
-            // axios({
-            //   method: "POST",
-            //   url: "http://localhost:8083/edge",
-            //   data: {
-            //     method: "add",
-            //     payload: {
-            //       source: 1048,
-            //       target: 1049,
-            //       attributes: {
-            //         type: "TYPE_TEST",
-            //         attribute1: "attribute1",
-            //       },
-            //     },
-            //   },
-            // });
+            axios({
+              method: "POST",
+              url: "http://localhost:8083/edge/",
+              data: {
+                method: "add",
+                payload: {
+                  source: 1048,
+                  target: 1049,
+                  attributes: {
+                    // type: "TYPE_TEST",
+                    attribute1: "attribute1",
+                  },
+                },
+              },
+            });
 
             /* delete relation by key test */
             // axios({
@@ -351,21 +351,21 @@ export default defineComponent({
             // });
 
             /* update relation by key test */
-            axios({
-              method: "POST",
-              url: "http://localhost:8083/graph/edge/",
-              data: {
-                method: "update",
-                payload: {
-                  key: 3103,
-                  // source: 1048,
-                  // target: 1049,
-                  attributes: {
-                    attribute1: "newattribute",
-                  },
-                },
-              },
-            });
+            // axios({
+            //   method: "POST",
+            //   url: "http://localhost:8083/graph/edge/",
+            //   data: {
+            //     method: "update",
+            //     payload: {
+            //       key: 3103,
+            //       // source: 1048,
+            //       // target: 1049,
+            //       attributes: {
+            //         attribute1: "newattribute",
+            //       },
+            //     },
+            //   },
+            // });
           });
 
           //

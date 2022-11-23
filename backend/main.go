@@ -479,6 +479,7 @@ func edgeHandler(driver neo4j.Driver, database string) func(http.ResponseWriter,
 }
 
 func addEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session, nReq EdgeRequest) {
+	fmt.Println("addEdge ...")
 	var addEdgeRes EdgeResult
 	EDGE_TYPE := "type"
 
@@ -647,10 +648,10 @@ func main() {
 	defer unsafeClose(driver)
 	serveMux := http.NewServeMux()
 	// serveMux.HandleFunc("/", defaultHandler)
-
+	BASE := ""
 	serveMux.HandleFunc(BASE+"/graph/", graphHandler(driver, configuration.Database))
 	serveMux.HandleFunc(BASE+"/graph/node/", nodeHandler(driver, configuration.Database))
-	serveMux.HandleFunc(BASE+"/graph/edge/", edgeHandler(driver, configuration.Database))
+	serveMux.HandleFunc(BASE+"/edge/", edgeHandler(driver, configuration.Database))
 
 	fmt.Println(configuration)
 
