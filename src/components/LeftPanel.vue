@@ -51,20 +51,21 @@
         default="Default - All edges are gray"
       />
     </el-tab-pane> -->
-    <el-scrollbar max-height="700px">
-      <el-tab-pane label="Data" name="Data">
-        <div class="titleText">North Wind</div>
-        <div class="informtext">Node: {{ getGraphNodeCount() }}</div>
-        <div class="informtext">Edges: {{ getGraphEdgeCount() }}</div>
+    <el-tab-pane label="Data" name="Data">
+      <div class="titleText">North Wind</div>
+      <div class="informtext">Node: {{ getGraphNodeCount() }}</div>
+      <div class="informtext">Edges: {{ getGraphEdgeCount() }}</div>
 
-        <el-divider> </el-divider>
-        <div v-if="getIsGraphItemSelected()">
-          <el-form
-            ref="formRef"
-            :model="attrs"
-            label-width="120px"
-            class="demo-dynamic"
-          >
+      <el-divider> </el-divider>
+
+      <div v-if="getIsGraphItemSelected()">
+        <el-form
+          ref="formRef"
+          :model="attrs"
+          label-width="120px"
+          class="demo-dynamic"
+        >
+          <el-scrollbar max-height="50vh" :noresize="false">
             <div v-for="(dict, i) in attrs" :key="i" class="chooseform">
               <el-row>
                 <el-col :span="8"
@@ -72,7 +73,6 @@
                     v-model="dict.key"
                     class="attr-input"
                     :placeholder="dict.key"
-                    size="small"
                   />
                 </el-col>
                 <el-col :span="12">
@@ -80,7 +80,6 @@
                     v-model="dict.value"
                     class="attr-input"
                     :placeholder="dict.value"
-                    size="small"
                 /></el-col>
                 <el-col :span="4">
                   <el-button
@@ -96,11 +95,12 @@
                 </el-col>
               </el-row>
             </div>
-          </el-form>
-          <el-button @click="addDomain">Add</el-button>
-          <el-button type="primary" @click="onSubmit">Update</el-button>
-        </div>
-        <!-- <el-row>
+          </el-scrollbar>
+        </el-form>
+        <el-button @click="addDomain">Add</el-button>
+        <el-button type="primary" @click="onSubmit">Update</el-button>
+      </div>
+      <!-- <el-row>
         <el-col :span="12">
           <div class="informtext">Color nodes select:</div>
           <el-select-v2
@@ -173,8 +173,7 @@
           </el-collapse>
         </div>
       </el-row> -->
-      </el-tab-pane>
-    </el-scrollbar>
+    </el-tab-pane>
     <el-tab-pane label="Layout" name="Layout">
       <div class="titleText">Layout</div>
       <div class="informtext">Different layouts to vsualize the graph</div>
@@ -219,6 +218,7 @@ export default defineComponent({
       layoutToSelect: layoutToSelect,
       formRef: ref<FormInstance>(),
       attrs: ref(),
+      isToUpdateScrollBar: false,
     };
   },
   methods: {
@@ -227,7 +227,7 @@ export default defineComponent({
         key: "",
         value: "",
       });
-      console.log(this.attrs);
+      this.isToUpdateScrollBar = !this.isToUpdateScrollBar;
     },
     removeDomain(dict) {
       const index = this.attrs.indexOf(dict);
@@ -314,7 +314,6 @@ export default defineComponent({
 }
 
 .el-button.attributes-delete-button {
-  margin-top: -4px;
   border: none;
   color: transparent;
   background-color: transparent;
