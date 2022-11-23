@@ -63,12 +63,11 @@ type Edge struct {
 }
 
 func parseConfiguration() *Neo4jConfiguration {
-
 	return &Neo4jConfiguration{
-		Url:      "neo4j://localhost:7687",
-		Username: "neo4j",
-		Password: "Northwind",
-		Database: "neo4j",
+		Url:      NEO4J_URL,
+		Username: NEO4J_USERNAME,
+		Password: NEO4J_PASSWORD,
+		Database: NEO4J_DATABASE,
 	}
 }
 
@@ -272,7 +271,7 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 
 	fmt.Println("add node ", newnode)
 	var buffer bytes.Buffer
-	buffer.WriteString("CREATE (n")
+	buffer.WriteString("CREATE (n:new")
 	for key, val := range newnode.Properties {
 		if key == NODE_LABEL {
 			buffer.WriteString(":")
@@ -318,10 +317,8 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 			record := result.Record()
 			if id, findit := record.Get("nodeID"); findit {
 				if data, ok := id.(int64); ok {
-					message.WriteString("ADD NODE: {key: ")
 					strData := strconv.FormatInt(data, 10)
 					message.WriteString(strData)
-					message.WriteString("}")
 				}
 			}
 
@@ -658,7 +655,7 @@ func main() {
 	var port string
 	var found bool
 	if port, found = os.LookupEnv("PORT"); !found {
-		port = "8083"
+		port = PORT
 	}
 	fmt.Printf("Running on port %s, database is at %s\n", port, configuration.Url)
 	panic(http.ListenAndServe(":"+port, serveMux))

@@ -51,34 +51,54 @@
         default="Default - All edges are gray"
       />
     </el-tab-pane> -->
-    <el-tab-pane label="Data" name="Data">
-      <div class="titleText">North Wind</div>
-      <div class="informtext">Node: {{ getGraphNodeCount() }}</div>
-      <div class="informtext">Edges: {{ getGraphEdgeCount() }}</div>
+    <el-scrollbar max-height="700px">
+      <el-tab-pane label="Data" name="Data">
+        <div class="titleText">North Wind</div>
+        <div class="informtext">Node: {{ getGraphNodeCount() }}</div>
+        <div class="informtext">Edges: {{ getGraphEdgeCount() }}</div>
 
-      <el-divider> </el-divider>
-      <el-scrollbar height="500px">
-        <div v-if="getIsGraphNodeSelected()">
-          <div
-            v-for="(value, key) in getSelectedNodeAttributes()"
-            :key="key"
-            class="chooseform"
+        <el-divider> </el-divider>
+        <div v-if="getIsGraphItemSelected()">
+          <el-form
+            ref="formRef"
+            :model="attrs"
+            label-width="120px"
+            class="demo-dynamic"
           >
-            <el-row>
-              <el-col :span="12">{{ key }} </el-col>
-              <el-col :span="12">
-                <el-input
-                  v-model="attrs[key]"
-                  :placeholder="value"
-                  clearable
-                  size="small"
-              /></el-col>
-            </el-row>
-          </div>
+            <div v-for="(dict, i) in attrs" :key="i" class="chooseform">
+              <el-row>
+                <el-col :span="8"
+                  ><el-input
+                    v-model="dict.key"
+                    class="attr-input"
+                    :placeholder="dict.key"
+                    size="small"
+                    clearable
+                  />
+                </el-col>
+                <el-col :span="12">
+                  <el-input
+                    v-model="dict.value"
+                    class="attr-input"
+                    :placeholder="dict.value"
+                    size="small"
+                    clearable
+                /></el-col>
+                <el-col :span="4">
+                  <el-button
+                    :icon="Close"
+                    circle
+                    style="margin-top: -2px"
+                    @click.prevent="removeDomain(dict)"
+                  />
+                </el-col>
+              </el-row>
+            </div>
+          </el-form>
+          <el-button @click="addDomain">Add</el-button>
           <el-button type="primary" @click="onSubmit">Update</el-button>
         </div>
-      </el-scrollbar>
-      <!-- <el-row>
+        <!-- <el-row>
         <el-col :span="12">
           <div class="informtext">Color nodes select:</div>
           <el-select-v2
@@ -151,7 +171,8 @@
           </el-collapse>
         </div>
       </el-row> -->
-    </el-tab-pane>
+      </el-tab-pane>
+    </el-scrollbar>
     <el-tab-pane label="Layout" name="Layout">
       <div class="titleText">Layout</div>
       <div class="informtext">Different layouts to vsualize the graph</div>
@@ -170,6 +191,8 @@
 <script lang="ts">
 import { defineComponent, ref } from "vue";
 import store from "@/store";
+import type { FormInstance } from "element-plus";
+import { Close } from "@element-plus/icons-vue";
 
 const layoutToSelect = [
   { value: "0", label: "original" },
@@ -192,28 +215,60 @@ export default defineComponent({
       activeName: "Data",
       layoutSelected: ref(),
       layoutToSelect: layoutToSelect,
+      formRef: ref<FormInstance>(),
       attrs: ref(),
+      Close: Close,
     };
   },
   methods: {
+    addDomain() {
+      this.attrs.push({
+        key: "",
+        value: "",
+      });
+      console.log(this.attrs);
+    },
+    removeDomain(dict) {
+      const index = this.attrs.indexOf(dict);
+      if (index !== -1) {
+        this.attrs.splice(index, 1);
+      }
+    },
     getGraphNodeCount() {
       return store.state.graphNodeCount;
     },
     getGraphEdgeCount() {
       return store.state.graphEdgeCount;
     },
-    getIsGraphNodeSelected() {
-      return store.state.graphNodeSelected != null;
+
+    getIsGraphItemSelected() {
+      return store.state.graphItemSelected;
     },
-    getSelectedNodeAttributes() {
-      if (
-        store.state.graph &&
-        store.state.graph.hasNode(store.state.graphNodeSelected)
-      ) {
-        this.attrs = store.state.graph.getNodeAttributes(
-          store.state.graphNodeSelected
-        );
-        return this.attrs;
+    getSelectedItemAttributes() {
+      if (store.state.graph && store.state.graphItemSelected) {
+        if (store.state.graphItemSelected["type"] == "node") {
+          const attributes = store.state.graph.getNodeAttributes(
+            store.state.graphItemSelected["id"]
+          );
+
+        this.attrs = Object.entries(attributes).map(([key, value]) => ({
+          key: key,
+          value: value.toString(),
+        }));
+
+          return this.attrs;
+        } else if (store.state.graphItemSelected["type"] == "edge") {
+          const attributes = store.state.graph.getEdgeAttributes(
+            store.state.graphItemSelected["id"]
+          );
+
+          this.attrs = Object.entries(attributes).map(([key, value]) => ({
+            key: key,
+            value: value,
+          }));
+
+          return this.attrs;
+        }
       }
     },
     handelLayoutChange(layoutId) {
@@ -250,5 +305,9 @@ export default defineComponent({
   font-size: 14px;
   color: #303133;
   margin-top: 20px;
+}
+
+.attr-input :first-child {
+  /* box-shadow: none; */
 }
 </style>
