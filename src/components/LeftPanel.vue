@@ -73,7 +73,6 @@
                     class="attr-input"
                     :placeholder="dict.key"
                     size="small"
-                    clearable
                   />
                 </el-col>
                 <el-col :span="12">
@@ -82,15 +81,16 @@
                     class="attr-input"
                     :placeholder="dict.value"
                     size="small"
-                    clearable
                 /></el-col>
                 <el-col :span="4">
                   <el-button
-                    :icon="Close"
-                    circle
-                    style="margin-top: -2px"
+                    class="attributes-delete-button"
                     @click.prevent="removeDomain(dict)"
-                  />
+                  >
+                    <el-icon style="vertical-align: middle">
+                      <Close />
+                    </el-icon>
+                  </el-button>
                 </el-col>
               </el-row>
             </div>
@@ -217,7 +217,6 @@ export default defineComponent({
       layoutToSelect: layoutToSelect,
       formRef: ref<FormInstance>(),
       attrs: ref(),
-      Close: Close,
     };
   },
   methods: {
@@ -242,6 +241,7 @@ export default defineComponent({
     },
 
     getIsGraphItemSelected() {
+      this.attrs = this.getSelectedItemAttributes();
       return store.state.graphItemSelected;
     },
     getSelectedItemAttributes() {
@@ -251,10 +251,10 @@ export default defineComponent({
             store.state.graphItemSelected["id"]
           );
 
-        this.attrs = Object.entries(attributes).map(([key, value]) => ({
-          key: key,
-          value: value.toString(),
-        }));
+          this.attrs = Object.entries(attributes).map(([key, value]) => ({
+            key: key,
+            value: value.toString(),
+          }));
 
           return this.attrs;
         } else if (store.state.graphItemSelected["type"] == "edge") {
@@ -308,6 +308,21 @@ export default defineComponent({
 }
 
 .attr-input :first-child {
-  /* box-shadow: none; */
+  box-shadow: none;
+}
+
+.el-button.attributes-delete-button {
+  margin-top: -4px;
+  border: none;
+  color: transparent;
+}
+
+.el-row:hover > div > .el-button.attributes-delete-button {
+  color: #ddd;
+  background-color: transparent;
+}
+
+.el-row:hover > div > .el-button.attributes-delete-button:hover {
+  color: #000;
 }
 </style>
