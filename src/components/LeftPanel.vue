@@ -86,6 +86,8 @@
                   <el-button
                     class="attributes-delete-button"
                     @click.prevent="removeDomain(dict)"
+                    type="danger"
+                    plain
                   >
                     <el-icon style="vertical-align: middle">
                       <Close />
@@ -315,14 +317,11 @@ export default defineComponent({
   margin-top: -4px;
   border: none;
   color: transparent;
+  background-color: transparent;
 }
 
 .el-row:hover > div > .el-button.attributes-delete-button {
   color: #ddd;
   background-color: transparent;
-}
-
-.el-row:hover > div > .el-button.attributes-delete-button:hover {
-  color: #000;
 }
 </style>
