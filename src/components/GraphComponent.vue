@@ -44,7 +44,7 @@
       </div>
       <div id="edgeContextMenu" class="contextMenu">
         <div>
-          <button id="edgeDelete" @click="handleNodeDeleteClick">delete</button>
+          <button id="edgeDelete" @click="handleEdgeDeleteClick">delete</button>
         </div>
       </div>
       <div id="stageContextMenu" class="contextMenu">
@@ -70,7 +70,7 @@ import circular from "graphology-layout/circular";
 import { layoutAnimate } from "@/lib/layoutAnimation";
 import { drawHover } from "@/utils/canvas";
 import LeftPanel from "@/components/LeftPanel.vue";
-import { defineComponent, ref } from "vue";
+import { defineComponent, ref, render } from "vue";
 
 import store from "@/store";
 import axios from "axios";
@@ -104,6 +104,7 @@ interface State {
   hoveredNeighbors?: Set<string>;
 
   isDragging?: boolean;
+  nodeToConnect?: string;
 }
 const state: State = {
   searchQuery: "",
@@ -122,6 +123,7 @@ export default defineComponent({
       fa2layout: new FA2Layout(new Graph()),
       stageContextMenu: ref<HTMLElement>(),
       nodeContextMenu: ref<HTMLElement>(),
+      edgeContextMenu: ref<HTMLElement>(),
       renderer: ref<Sigma>(),
     };
   },
@@ -134,6 +136,9 @@ export default defineComponent({
     ) as HTMLElement;
     this.nodeContextMenu = document.getElementById(
       "nodeContextMenu"
+    ) as HTMLElement;
+    this.edgeContextMenu = document.getElementById(
+      "edgeContextMenu"
     ) as HTMLElement;
   },
   methods: {
@@ -211,6 +216,10 @@ export default defineComponent({
 
           renderer.on("rightClickNode", (e) => {
             this.handleNodeRightClick(e.event);
+          });
+
+          renderer.on("rightClickEdge", (e) => {
+            this.handleEdgeRightClick(e.event);
           });
 
           graph.forEachNode((node, attr) => {
@@ -578,6 +587,10 @@ export default defineComponent({
             graph.setNodeAttribute(draggedNode, "highlighted", true);
           });
 
+          renderer.on("clickNode", (e) => {
+            this.handleNodeClick(e.node);
+          });
+
           // On mouse move, if the drag mode is enabled, we change the position of the draggedNode
           renderer.getMouseCaptor().on("mousemovebody", (e) => {
             if (!state.isDragging || !draggedNode) return;
@@ -654,6 +667,14 @@ export default defineComponent({
         this.nodeContextMenu.style.display = "initial";
         this.nodeContextMenu.style.top = e.original.pageY + "px";
         this.nodeContextMenu.style.left = e.original.pageX + "px";
+      }
+    },
+    handleEdgeRightClick(e) {
+      e.original.preventDefault();
+      if (this.edgeContextMenu) {
+        this.edgeContextMenu.style.display = "initial";
+        this.edgeContextMenu.style.top = e.original.pageY + "px";
+        this.edgeContextMenu.style.left = e.original.pageX + "px";
       }
     },
     handleStageRightClick(e) {
@@ -748,14 +769,66 @@ export default defineComponent({
       }
     },
     handleEdgeDeleteClick(e) {
-      console.log(e);
+      const graphItemSelected = store.state.graphItemSelected;
+      if (graphItemSelected == null) {
+        return;
+      }
+      if (this.edgeContextMenu) {
+        this.edgeContextMenu.style.display = "none";
+      }
+
+      axios({
+        method: "POST",
+        url: BACKEND + "/graph/edge/",
+        data: {
+          method: "delete",
+          payload: {
+            key: +graphItemSelected["id"],
+          },
+        },
+      }).then(() => {
+        /// backend responds with success
+        store.dispatch("set", {
+          key: "graphItemSelected",
+          value: null,
+        });
+        this.graph.dropEdge(graphItemSelected["id"]);
+
+        store.dispatch("decrement", {
+          key: "graphEdgeCount",
+          value: null,
+        });
+      });
     },
     handleEdgeAddClick(e) {
-      const graphItemSelected = store.state.graphItemSelected;
       if (this.nodeContextMenu) {
         this.nodeContextMenu.style.display = "none";
       }
-      console.log(e);
+
+      const graphItemSelected = store.state.graphItemSelected;
+      if (graphItemSelected == null) {
+        return;
+      }
+      state.nodeToConnect = graphItemSelected.id;
+    },
+    handleNodeClick(node) {
+      if (state.nodeToConnect) {
+        axios({
+          method: "POST",
+          url: BACKEND + "/graph/edge",
+          data: {
+            method: "add",
+            payload: {
+              source: +state.nodeToConnect,
+              target: +node,
+              attributes: {},
+            },
+          },
+        }).then(() => {
+          this.graph.addEdge(state.nodeToConnect, node);
+          state.nodeToConnect = undefined;
+        });
+      }
     },
   },
   computed: {
