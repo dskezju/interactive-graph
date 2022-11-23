@@ -845,13 +845,15 @@ export default defineComponent({
       if (state.nodeToConnect) {
         axios({
           method: "POST",
-          url: BACKEND + "/graph/edge",
+          url: BACKEND + "/graph/edge/",
           data: {
             method: "add",
             payload: {
               source: +state.nodeToConnect,
               target: +node,
-              attributes: {},
+              attributes: {
+                type: "new",
+              },
             },
           },
         }).then(() => {
