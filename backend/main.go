@@ -318,6 +318,7 @@ func addNode(w http.ResponseWriter, req *http.Request, session neo4j.Session, ne
 			if id, findit := record.Get("nodeID"); findit {
 				if data, ok := id.(int64); ok {
 					strData := strconv.FormatInt(data, 10)
+					message.WriteString("key: ")
 					message.WriteString(strData)
 				}
 			}
@@ -476,26 +477,27 @@ func edgeHandler(driver neo4j.Driver, database string) func(http.ResponseWriter,
 }
 
 func addEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session, nReq EdgeRequest) {
+	fmt.Println("addEdge ...")
 	var addEdgeRes EdgeResult
 	EDGE_TYPE := "type"
 
 	var buffer bytes.Buffer
-	buffer.WriteString("MATCH (s),(e) WHERE ID(s)=$startID AND ID(e)=$endID ")
+	buffer.WriteString("MATCH (s),(t) WHERE ID(s)=$startID AND ID(t)=$endID ")
+	buffer.WriteString("MERGE (s)-[r")
 	findtype := 0
 	for key, val := range nReq.Properties {
 		if key == EDGE_TYPE {
 			findtype = 1
-			buffer.WriteString("MERGE (s)-[r:")
+			buffer.WriteString(":")
 			if rec, ok := val.(string); ok {
 				buffer.WriteString(rec)
 			} else {
 				log.Println("error: the type of 'label' is not string.")
 			}
-			buffer.WriteString("]->(e) ")
 			break
 		}
 	}
-
+	buffer.WriteString("]->(t) ")
 	if findtype == 0 {
 		log.Println("error: the type of edge must be specified.")
 		addEdgeRes.Success = 0
@@ -521,12 +523,16 @@ func addEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session, nR
 			log.Println("error: the type of attribute is not string.")
 		}
 	}
+	buffer.WriteString("RETURN ID(r) as edgeID")
 	addEdgeCypher := buffer.String()
-	fmt.Println(addEdgeCypher)
 
 	startID := nReq.Start
 	endID := nReq.End
-	addNodeResp, err := session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
+	fmt.Println(addEdgeCypher, endID)
+	fmt.Println(startID)
+	fmt.Println(endID)
+
+	addedgeResp, err := session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
 		result, err := tx.Run(addEdgeCypher, map[string]interface{}{
 			"startID": startID,
 			"endID":   endID,
@@ -535,11 +541,24 @@ func addEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session, nR
 			return nil, err
 		}
 		// fmt.Println(result)
+		var message bytes.Buffer
+		for result.Next() {
+			record := result.Record()
+			if id, findit := record.Get("edgeID"); findit {
+				if data, ok := id.(int64); ok {
+					strData := strconv.FormatInt(data, 10)
+					message.WriteString("key: ")
+					message.WriteString(strData)
+				}
+			}
+		}
+
 		var summary, _ = result.Consume()
 		var addEdgeResult EdgeResult
 		// The number of relationships created.
 		addEdgeResult.Success = summary.Counters().RelationshipsCreated()
-		// fmt.Println(addNodeResult)
+		addEdgeResult.Message = message.String()
+		fmt.Println(addEdgeResult)
 
 		// return the number of nodes created.
 		return addEdgeResult, nil
@@ -548,7 +567,7 @@ func addEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session, nR
 		log.Println("error adding node:", err)
 		return
 	}
-	err = json.NewEncoder(w).Encode(addNodeResp)
+	err = json.NewEncoder(w).Encode(addedgeResp)
 	if err != nil {
 		log.Println("error writing node response:", err)
 	}
@@ -571,7 +590,6 @@ func deleteEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session,
 		var deleteEdge EdgeResult
 		deleteEdge.Success = summary.Counters().RelationshipsDeleted()
 		fmt.Println(deleteEdge)
-
 		// return the number of nodes created.
 		return deleteEdge, nil
 	})
@@ -587,7 +605,52 @@ func deleteEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session,
 }
 
 func updateEdge(w http.ResponseWriter, req *http.Request, session neo4j.Session, nReq EdgeRequest) {
+	fmt.Println(nReq)
+	// var updateEdgeRes EdgeResult
 
+	var buffer bytes.Buffer
+	buffer.WriteString("MATCH ()-[r]-() WHERE ID(r)=$edgeID ")
+
+	for key, val := range nReq.Properties {
+		buffer.WriteString("SET r.")
+		buffer.WriteString(key)
+		buffer.WriteString(" = ")
+		if rec, ok := val.(string); ok {
+			buffer.WriteString("'")
+			buffer.WriteString(rec)
+			buffer.WriteString("' ")
+		} else {
+			log.Println("error: the type of attribute is not string.")
+		}
+	}
+	updateEdgeCypher := buffer.String()
+	edgeID := nReq.Identity
+	fmt.Println(updateEdgeCypher, edgeID)
+	updateEdgeResp, err := session.WriteTransaction(func(tx neo4j.Transaction) (interface{}, error) {
+		result, err := tx.Run(updateEdgeCypher, map[string]interface{}{
+			"edgeID": edgeID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		// fmt.Println(result)
+		var summary, _ = result.Consume()
+		var updateEdgeResult EdgeResult
+		// The number of relationships created.
+		updateEdgeResult.Success = summary.Counters().PropertiesSet()
+		fmt.Println(updateEdgeResult)
+
+		// return the number of nodes created.
+		return updateEdgeResult, nil
+	})
+	if err != nil {
+		log.Println("error adding node:", err)
+		return
+	}
+	err = json.NewEncoder(w).Encode(updateEdgeResp)
+	if err != nil {
+		log.Println("error writing node response:", err)
+	}
 }
 
 func main() {
@@ -600,7 +663,7 @@ func main() {
 	defer unsafeClose(driver)
 	serveMux := http.NewServeMux()
 	// serveMux.HandleFunc("/", defaultHandler)
-
+	// BASE := ""
 	serveMux.HandleFunc(BASE+"/graph/", graphHandler(driver, configuration.Database))
 	serveMux.HandleFunc(BASE+"/graph/node/", nodeHandler(driver, configuration.Database))
 	serveMux.HandleFunc(BASE+"/graph/edge/", edgeHandler(driver, configuration.Database))
