@@ -357,14 +357,15 @@ export default defineComponent({
             /* add relation test */
             axios({
               method: "POST",
-              url: "http://localhost:8083/edge/",
+              url: "http://localhost:8083/graph/edge/",
               data: {
                 method: "add",
                 payload: {
                   source: 1048,
                   target: 1049,
                   attributes: {
-                    // type: "TYPE_TEST",
+                    // one edge 'type' must be specified
+                    type: "TYPE_TEST",
                     attribute1: "attribute1",
                   },
                 },
