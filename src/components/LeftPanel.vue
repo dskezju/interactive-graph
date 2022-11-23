@@ -58,9 +58,9 @@
 
       <el-divider> </el-divider>
       <el-scrollbar height="500px">
-        <div v-if="getIsGraphNodeSelected()">
+        <div v-if="getIsGraphItemSelected()">
           <div
-            v-for="(dict, i) in getSelectedNodeAttributes()"
+            v-for="(dict, i) in getSelectedItemAttributes()"
             :key="i"
             class="chooseform"
           >
@@ -209,24 +209,34 @@ export default defineComponent({
     getGraphEdgeCount() {
       return store.state.graphEdgeCount;
     },
-    getIsGraphNodeSelected() {
-      return store.state.graphNodeSelected != -1;
+    getIsGraphItemSelected() {
+      return store.state.graphItemSelected;
     },
-    getSelectedNodeAttributes() {
-      if (
-        store.state.graph &&
-        store.state.graph.hasNode(store.state.graphNodeSelected)
-      ) {
-        const attributes = store.state.graph.getNodeAttributes(
-          store.state.graphNodeSelected
-        );
+    getSelectedItemAttributes() {
+      if (store.state.graph && store.state.graphItemSelected) {
+        if (store.state.graphItemSelected["type"] == "node") {
+          const attributes = store.state.graph.getNodeAttributes(
+            store.state.graphItemSelected["id"]
+          );
 
-        this.attrs = Object.entries(attributes).map(([key, value]) => ({
-          key: key,
-          value: value,
-        }));
+          this.attrs = Object.entries(attributes).map(([key, value]) => ({
+            key: key,
+            value: value,
+          }));
 
-        return this.attrs;
+          return this.attrs;
+        } else if (store.state.graphItemSelected["type"] == "edge") {
+          const attributes = store.state.graph.getEdgeAttributes(
+            store.state.graphItemSelected["id"]
+          );
+
+          this.attrs = Object.entries(attributes).map(([key, value]) => ({
+            key: key,
+            value: value,
+          }));
+
+          return this.attrs;
+        }
       }
     },
     handelLayoutChange(layoutId) {

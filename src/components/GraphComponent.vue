@@ -89,6 +89,27 @@ function colorize(str: string) {
   return "#" + Array(6 - color.length + 1).join("0") + color;
 }
 
+// Type and declare internal state:
+interface State {
+  hoveredNode?: string;
+  hoveredEdge?: string;
+  searchQuery: string;
+
+  // State derived from query:
+  selectedNode?: string;
+  selectedEdge?: string;
+  suggestions?: Set<string>;
+
+  // State derived from hovered node:
+  hoveredNeighbors?: Set<string>;
+
+  isDragging?: boolean;
+}
+const state: State = {
+  searchQuery: "",
+  isDragging: false,
+};
+
 export default defineComponent({
   name: "GraphComponent",
   components: {
@@ -183,6 +204,8 @@ export default defineComponent({
               circle: NodeProgramFull,
             },
             renderEdgeLabels: true,
+            enableEdgeHoverEvents: "debounce",
+            enableEdgeClickEvents: true,
           });
           this.renderer = renderer;
 
@@ -351,6 +374,23 @@ export default defineComponent({
             // });
           });
 
+          renderer.on("enterEdge", ({ edge }) => {
+            state.hoveredEdge = edge;
+            renderer.refresh();
+          });
+          renderer.on("leaveEdge", ({ edge }) => {
+            state.hoveredEdge = undefined;
+            renderer.refresh();
+          });
+          renderer.on("clickEdge", ({ edge }) => {
+            state.selectedEdge = edge;
+            store.dispatch("set", {
+              key: "graphItemSelected",
+              value: { type: "edge", id: edge },
+            });
+            renderer.refresh();
+          });
+
           //
           // highlight and search
           // ~~~~~~~~~~~~~~~~~~~~
@@ -362,25 +402,6 @@ export default defineComponent({
           const searchSuggestions = document.getElementById(
             "suggestions"
           ) as HTMLDataListElement;
-
-          // Type and declare internal state:
-          interface State {
-            hoveredNode?: string;
-            searchQuery: string;
-
-            // State derived from query:
-            selectedNode?: string;
-            suggestions?: Set<string>;
-
-            // State derived from hovered node:
-            hoveredNeighbors?: Set<string>;
-
-            isDragging?: boolean;
-          }
-          const state: State = {
-            searchQuery: "",
-            isDragging: false,
-          };
 
           // Feed the datalist autocomplete values:
           searchSuggestions.innerHTML = graph
@@ -524,6 +545,10 @@ export default defineComponent({
               res.hidden = true;
             }
 
+            if (edge == state.hoveredEdge || edge == state.selectedEdge) {
+              res.color = "#cc0000";
+            }
+
             return res;
           });
 
@@ -545,8 +570,8 @@ export default defineComponent({
             state.isDragging = true;
             state.selectedNode = e.node;
             store.dispatch("set", {
-              key: "graphNodeSelected",
-              value: e.node,
+              key: "graphItemSelected",
+              value: { type: "node", id: e.node },
             });
             this.fa2layout.stop();
             draggedNode = e.node;
@@ -587,10 +612,12 @@ export default defineComponent({
 
           renderer.on("clickStage", () => {
             state.selectedNode = undefined;
+            state.selectedEdge = undefined;
             store.dispatch("set", {
-              key: "graphNodeSelected",
-              value: -1,
+              key: "graphItemSelected",
+              value: null,
             });
+            renderer.refresh();
           });
 
           renderer.on("rightClickStage", (e) => {
@@ -650,7 +677,10 @@ export default defineComponent({
       }
     },
     handleNodeDeleteClick() {
-      const graphNodeSelected = store.state.graphNodeSelected;
+      const graphItemSelected = store.state.graphItemSelected;
+      if (graphItemSelected == null) {
+        return;
+      }
       if (this.nodeContextMenu) {
         this.nodeContextMenu.style.display = "none";
       }
@@ -661,16 +691,16 @@ export default defineComponent({
         data: {
           method: "delete",
           payload: {
-            key: +graphNodeSelected,
+            key: +graphItemSelected["id"],
           },
         },
       }).then(() => {
         /// backend responds with success
         store.dispatch("set", {
-          key: "graphNodeSelected",
+          key: "graphItemSelected",
           value: null,
         });
-        this.graph.dropNode(graphNodeSelected);
+        this.graph.dropNode(graphItemSelected["id"]);
 
         store.dispatch("decrement", {
           key: "graphNodeCount",
@@ -721,7 +751,7 @@ export default defineComponent({
       console.log(e);
     },
     handleEdgeAddClick(e) {
-      const graphNodeSelected = store.state.graphNodeSelected;
+      const graphItemSelected = store.state.graphItemSelected;
       if (this.nodeContextMenu) {
         this.nodeContextMenu.style.display = "none";
       }
